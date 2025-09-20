@@ -1,3 +1,5 @@
+import { ReactNode } from "react";
+
 // Tipos de usuario
 export interface Usuario {
   id: number;
@@ -83,6 +85,7 @@ export interface AuthContextType {
   usuario: UsuarioCompleto | null;
   token: string | null;
   isLoading: boolean;
+  isAuthenticated: boolean; // <-- AGREGAR ESTA LÍNEA
   error: string | null;
   login: (correo: string, contrasena: string) => Promise<void>;
   register: (datos: DatosRegistro) => Promise<void>;
@@ -193,6 +196,8 @@ export interface EstadisticasGenerales {
 }
 
 export interface EstudianteResumen {
+  nivelEstresActual: ReactNode;
+  usuario: any;
   id: number;
   nombreCompleto: string;
   correo: string;
@@ -207,6 +212,7 @@ export interface EstudianteResumen {
 }
 
 export interface AlertaCompleta extends Alerta {
+  tipo: ReactNode;
   estudiante: {
     id: number;
     nombre: string;
