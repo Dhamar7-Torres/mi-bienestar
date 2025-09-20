@@ -1,0 +1,173 @@
+generator client {
+  provider      = "prisma-client-js"
+  binaryTargets = ["native", "debian-openssl-3.0.x"]
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+
+model Usuario {
+  id                 Int       @id @default(autoincrement())
+  nombreCompleto     String    @map("nombre_completo") @db.VarChar(255)
+  correo            String    @unique @db.VarChar(255)
+  contrasenaHash    String    @map("contrasena_hash") @db.VarChar(255)
+  tipoUsuario       TipoUsuario @map("tipo_usuario")
+  fechaCreacion     DateTime  @default(now()) @map("fecha_creacion")
+  fechaActualizacion DateTime @updatedAt @map("fecha_actualizacion")
+  
+
+  estudiante        Estudiante?
+  coordinador       Coordinador?
+  
+  @@map("usuarios")
+}
+
+
+model Estudiante {
+  id                    Int       @id @default(autoincrement())
+  usuarioId             Int       @unique @map("usuario_id")
+  carrera              String    @db.VarChar(255)
+  semestre             Int
+  nivelEstresActual    Int       @default(0) @map("nivel_estres_actual")
+  nivelBurnoutActual   Int       @default(0) @map("nivel_burnout_actual")
+  estadoRiesgo         NivelRiesgo @default(BAJO) @map("estado_riesgo")
+  fechaUltimaEvaluacion DateTime? @map("fecha_ultima_evaluacion")
+  
+
+  usuario              Usuario   @relation(fields: [usuarioId], references: [id], onDelete: Cascade)
+  evaluaciones         Evaluacion[]
+  alertas              Alerta[]
+  
+  @@map("estudiantes")
+}
+
+
+model Coordinador {
+  id            Int     @id @default(autoincrement())
+  usuarioId     Int     @unique @map("usuario_id")
+  departamento  String  @db.VarChar(255)
+  
+  // Relaciones
+  usuario       Usuario @relation(fields: [usuarioId], references: [id], onDelete: Cascade)
+  
+  @@map("coordinadores")
+}
+
+
+model Evaluacion {
+  id                Int       @id @default(autoincrement())
+  estudianteId      Int       @map("estudiante_id")
+  puntajeEstres     Int       @map("puntaje_estres")
+  puntajeBurnout    Int       @map("puntaje_burnout")
+  puntajeTotal      Int       @map("puntaje_total")
+  nivelRiesgo       NivelRiesgo @map("nivel_riesgo")
+  respuestas        Json      // Almacena las respuestas en formato JSON
+  fechaEvaluacion   DateTime  @default(now()) @map("fecha_evaluacion")
+  
+  // Relaciones
+  estudiante        Estudiante @relation(fields: [estudianteId], references: [id], onDelete: Cascade)
+  
+  @@map("evaluaciones")
+}
+
+
+model Alerta {
+  id              Int       @id @default(autoincrement())
+  estudianteId    Int       @map("estudiante_id")
+  tipoAlerta      String    @map("tipo_alerta") @db.VarChar(50)
+  severidad       NivelRiesgo
+  mensaje         String    @db.Text
+  estaLeida       Boolean   @default(false) @map("esta_leida")
+  fechaCreacion   DateTime  @default(now()) @map("fecha_creacion")
+  
+  // Relaciones
+  estudiante      Estudiante @relation(fields: [estudianteId], references: [id], onDelete: Cascade)
+  
+  @@map("alertas")
+}
+
+
+model PreguntaEvaluacion {
+  id              Int       @id @default(autoincrement())
+  textoPregunta   String    @map("texto_pregunta") @db.Text
+  categoria       CategoriaEvaluacion
+  peso            Int       @default(1)
+  activa          Boolean   @default(true)
+  orden           Int       @default(0)
+  
+  @@map("preguntas_evaluacion")
+}
+
+
+model Recurso {
+  id              Int       @id @default(autoincrement())
+  titulo          String    @db.VarChar(255)
+  descripcion     String?   @db.Text
+  tipoRecurso     TipoRecurso @map("tipo_recurso")
+  urlContenido    String?   @map("url_contenido") @db.VarChar(500)
+  categoria       String?   @db.VarChar(100)
+  activo          Boolean   @default(true)
+  fechaCreacion   DateTime  @default(now()) @map("fecha_creacion")
+  
+  @@map("recursos")
+}
+
+
+model Sesion {
+  id              String    @id @default(cuid())
+  usuarioId       Int       @map("usuario_id")
+  token           String    @db.Text
+  fechaExpiracion DateTime  @map("fecha_expiracion")
+  activa          Boolean   @default(true)
+  fechaCreacion   DateTime  @default(now()) @map("fecha_creacion")
+  
+  @@map("sesiones")
+}
+
+
+model RegistroActividad {
+  id              Int       @id @default(autoincrement())
+  usuarioId       Int?      @map("usuario_id")
+  accion          String    @db.VarChar(100)
+  descripcion     String?   @db.Text
+  metadatos       Json?     // Información adicional como IP, user agent, etc.
+  fechaCreacion   DateTime  @default(now()) @map("fecha_creacion")
+  
+  @@map("registro_actividad")
+}
+
+// Enums
+enum TipoUsuario {
+  ESTUDIANTE @map("estudiante")
+  COORDINADOR @map("coordinador")
+  
+  @@map("tipo_usuario")
+}
+
+enum NivelRiesgo {
+  BAJO  @map("bajo")
+  MEDIO @map("medio")
+  ALTO  @map("alto")
+  
+  @@map("nivel_riesgo")
+}
+
+enum CategoriaEvaluacion {
+  ESTRES  @map("estres")
+  BURNOUT @map("burnout")
+  
+  @@map("categoria_evaluacion")
+}
+
+enum TipoRecurso {
+  VIDEO     @map("video")
+  ARTICULO  @map("articulo")
+  EJERCICIO @map("ejercicio")
+  TECNICA   @map("tecnica")
+  
+  @@map("tipo_recurso")
+}
+

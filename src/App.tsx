@@ -3,15 +3,23 @@ import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-d
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { ROUTES } from './constants';
 
-// Componentes que crearemos
+// Componentes de autenticación
 import Login from './components/Auth/Login';
 import Register from './components/Auth/Register';
+
+// Componentes de estudiante
 import StudentDashboard from './components/Student/StudentDashboard';
 import WeeklyEvaluation from './components/Student/WeeklyEvaluation';
 import Resources from './components/Student/Resources';
+import EvaluationHistory from './components/Student/EvaluationHistory'; 
+
+// Componentes de coordinador
 import CoordinatorDashboard from './components/Coordinator/CoordinatorDashboard';
 import StudentsList from './components/Coordinator/StudentsList';
 import Alerts from './components/Coordinator/Alerts';
+import StudentDetails from './components/Coordinator/StudentDetails'; 
+
+// Componentes comunes
 import Loading from './components/Common/Loading';
 
 // Componente para rutas protegidas
@@ -41,7 +49,7 @@ function ProtectedRoute({ children, requiredRole }: ProtectedRouteProps) {
   return <>{children}</>;
 }
 
-// Componente para rutas públicas (solo accesibles si NO estás autenticado)
+// Componente para rutas públicas
 interface PublicRouteProps {
   children: React.ReactNode;
 }
@@ -86,10 +94,10 @@ function HomeRedirect() {
 function AppRoutes() {
   return (
     <Routes>
-      {/* Ruta raíz - redirige según autenticación */}
+      {/* Ruta raíz */}
       <Route path={ROUTES.HOME} element={<HomeRedirect />} />
 
-      {/* Rutas públicas - solo accesibles sin autenticación */}
+      {/* Rutas públicas */}
       <Route path={ROUTES.LOGIN} element={
         <PublicRoute>
           <Login />
@@ -121,6 +129,13 @@ function AppRoutes() {
         </ProtectedRoute>
       } />
 
+      {/* NUEVA RUTA - Historial de evaluaciones */}
+      <Route path={ROUTES.STUDENT_HISTORY} element={
+        <ProtectedRoute requiredRole="ESTUDIANTE">
+          <EvaluationHistory />
+        </ProtectedRoute>
+      } />
+
       {/* Rutas de coordinador */}
       <Route path={ROUTES.COORDINATOR_DASHBOARD} element={
         <ProtectedRoute requiredRole="COORDINADOR">
@@ -131,6 +146,13 @@ function AppRoutes() {
       <Route path={ROUTES.COORDINATOR_STUDENTS} element={
         <ProtectedRoute requiredRole="COORDINADOR">
           <StudentsList />
+        </ProtectedRoute>
+      } />
+
+      {/* NUEVA RUTA - Detalles de estudiante específico */}
+      <Route path="/coordinador/estudiantes/:studentId" element={
+        <ProtectedRoute requiredRole="COORDINADOR">
+          <StudentDetails />
         </ProtectedRoute>
       } />
       
