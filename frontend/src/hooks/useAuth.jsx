@@ -1,4 +1,5 @@
 import { useState, useEffect, createContext, useContext } from 'react';
+import { authService } from '../services/authService';
 
 const AuthContext = createContext();
 
@@ -15,109 +16,89 @@ export const AuthProvider = ({ children }) => {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    // Verificar si hay una sesión activa
-    const checkAuth = () => {
-      try {
-        const savedUser = localStorage.getItem('currentUser');
-        const sessionExpiry = localStorage.getItem('sessionExpiry');
-        
-        if (savedUser && sessionExpiry) {
-          const now = new Date().getTime();
-          const expiry = parseInt(sessionExpiry);
-          
-          // Verificar si la sesión no ha expirado (24 horas)
-          if (now < expiry) {
-            const userData = JSON.parse(savedUser);
-            setUser(userData);
-          } else {
-            // Sesión expirada, limpiar
-            localStorage.removeItem('currentUser');
-            localStorage.removeItem('sessionExpiry');
-          }
-        }
-      } catch (error) {
-        console.error('Error checking auth:', error);
-        // Si hay error al parsear, limpiar localStorage
-        localStorage.removeItem('currentUser');
-        localStorage.removeItem('sessionExpiry');
-      }
-      
-      setLoading(false);
-    };
-
     checkAuth();
   }, []);
 
-  const login = (userData, role) => {
+  const checkAuth = async () => {
     try {
-      // Crear objeto de usuario con rol
-      const userWithRole = { 
-        ...userData, 
-        role: role || userData.role 
+      const token = localStorage.getItem('authToken');
+      
+      if (token) {
+        // Verificar token con el backend
+        const response = await authService.verifyToken(token);
+        if (response.success) {
+          setUser(response.data.user);
+        } else {
+          // Token inválido, limpiar
+          localStorage.removeItem('authToken');
+        }
+      }
+    } catch (error) {
+      console.error('Error al verificar autenticación:', error);
+      localStorage.removeItem('authToken');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const login = async (email, password) => {
+    try {
+      const response = await authService.login({ email, password });
+      
+      if (response.success) {
+        const { user: userData, token } = response.data;
+        
+        // Guardar token y datos del usuario
+        localStorage.setItem('authToken', token);
+        setUser(userData);
+        
+        return { success: true, user: userData };
+      } else {
+        return { success: false, error: response.error };
+      }
+    } catch (error) {
+      console.error('Error durante el login:', error);
+      return { 
+        success: false, 
+        error: error.response?.data?.error || 'Error al iniciar sesión' 
       };
-      
-      setUser(userWithRole);
-      
-      // Guardar en localStorage con expiración de 24 horas
-      const expiryTime = new Date().getTime() + (24 * 60 * 60 * 1000); // 24 horas
-      localStorage.setItem('currentUser', JSON.stringify(userWithRole));
-      localStorage.setItem('sessionExpiry', expiryTime.toString());
-      
-      console.log('Usuario logueado:', userWithRole);
-    } catch (error) {
-      console.error('Error during login:', error);
     }
   };
 
-  const register = (userData) => {
+  const register = async (userData) => {
     try {
-      // Después del registro, hacer login automáticamente
-      login(userData, userData.role);
-      console.log('Usuario registrado y logueado:', userData);
+      const response = await authService.register(userData);
+      
+      if (response.success) {
+        const { user: registeredUser, token } = response.data;
+        
+        // Guardar token y datos del usuario
+        localStorage.setItem('authToken', token);
+        setUser(registeredUser);
+        
+        return { success: true, user: registeredUser };
+      } else {
+        return { success: false, error: response.error };
+      }
     } catch (error) {
-      console.error('Error during registration:', error);
+      console.error('Error durante el registro:', error);
+      return { 
+        success: false, 
+        error: error.response?.data?.error || 'Error al registrar usuario' 
+      };
     }
   };
 
-  const logout = () => {
+  const logout = async () => {
     try {
+      await authService.logout();
+    } catch (error) {
+      console.error('Error durante logout:', error);
+    } finally {
+      // Limpiar estado local independientemente del resultado
+      localStorage.removeItem('authToken');
       setUser(null);
-      localStorage.removeItem('currentUser');
-      localStorage.removeItem('sessionExpiry');
-      console.log('Usuario deslogueado');
-    } catch (error) {
-      console.error('Error during logout:', error);
     }
-  };
-
-  // Función para verificar si un email ya está registrado
-  const isEmailRegistered = (email) => {
-    try {
-      const registeredUsers = JSON.parse(localStorage.getItem('registeredUsers') || '[]');
-      return registeredUsers.some(user => user.email.toLowerCase() === email.toLowerCase());
-    } catch (error) {
-      console.error('Error checking email:', error);
-      return false;
-    }
-  };
-
-  // Función para obtener todos los usuarios registrados (para debug)
-  const getAllUsers = () => {
-    try {
-      return JSON.parse(localStorage.getItem('registeredUsers') || '[]');
-    } catch (error) {
-      console.error('Error getting users:', error);
-      return [];
-    }
-  };
-
-  // Función para limpiar todos los datos (útil para desarrollo)
-  const clearAllData = () => {
-    localStorage.removeItem('currentUser');
-    localStorage.removeItem('sessionExpiry');
-    localStorage.removeItem('registeredUsers');
-    setUser(null);
-    console.log('Todos los datos limpiados');
   };
 
   const value = {
@@ -128,11 +109,7 @@ export const AuthProvider = ({ children }) => {
     loading,
     isAuthenticated: !!user,
     isAdmin: user?.role === 'admin',
-    isStudent: user?.role === 'student',
-    // Funciones adicionales
-    isEmailRegistered,
-    getAllUsers,
-    clearAllData
+    isStudent: user?.role === 'student'
   };
 
   return (

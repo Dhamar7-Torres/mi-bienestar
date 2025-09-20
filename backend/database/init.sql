@@ -7,9 +7,22 @@ CREATE TABLE estudiantes (
     nombre VARCHAR(255) NOT NULL,
     email VARCHAR(255) UNIQUE NOT NULL,
     carrera VARCHAR(255) NOT NULL,
+    contrasena VARCHAR(255),
     semestre INTEGER NOT NULL CHECK (semestre > 0),
     fecha_registro TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     activo BOOLEAN DEFAULT TRUE,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE usuarios (
+    id SERIAL PRIMARY KEY,
+    nombre VARCHAR(255) NOT NULL,
+    email VARCHAR(255) UNIQUE NOT NULL,
+    contrasena VARCHAR(255) NOT NULL,
+    role VARCHAR(50) DEFAULT 'admin',
+    departamento VARCHAR(255),
+    activo BOOLEAN DEFAULT true,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
@@ -88,7 +101,7 @@ CREATE TABLE recursos (
     descripcion TEXT,
     tipo VARCHAR(50) NOT NULL CHECK (tipo IN ('video', 'articulo', 'audio', 'documento', 'herramienta')),
     duracion INTEGER, -- minutos
-    url TEXT,
+    urls TEXT,
     categoria VARCHAR(100) NOT NULL, -- 'estres', 'agotamiento', 'sobrecarga', 'burnout', 'general'
     activo BOOLEAN DEFAULT TRUE,
     fecha_creacion TIMESTAMP DEFAULT CURRENT_TIMESTAMP
@@ -113,3 +126,17 @@ END;
 $$ language 'plpgsql';
 
 CREATE TRIGGER update_estudiantes_updated_at BEFORE UPDATE ON estudiantes FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+
+-- Crear índices para mejorar rendimiento
+CREATE INDEX IF NOT EXISTS idx_estudiantes_email ON estudiantes(email);
+CREATE INDEX IF NOT EXISTS idx_usuarios_email ON usuarios(email);
+CREATE INDEX IF NOT EXISTS idx_estudiantes_activo ON estudiantes(activo);
+CREATE INDEX IF NOT EXISTS idx_usuarios_activo ON usuarios(activo);
+
+-- Comentarios para documentar las tablas
+COMMENT ON TABLE estudiantes IS 'Tabla de estudiantes del sistema';
+COMMENT ON COLUMN estudiantes.contrasena IS 'Contraseña hasheada del estudiante';
+
+COMMENT ON TABLE usuarios IS 'Tabla de usuarios administradores del sistema';
+COMMENT ON COLUMN usuarios.role IS 'Rol del usuario: admin, coordinator, etc.';
+COMMENT ON COLUMN usuarios.departamento IS 'Departamento al que pertenece el usuario';

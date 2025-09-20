@@ -86,44 +86,37 @@ export const RegisterPage = ({ onRegister, onBackToLogin }) => {
     }
 
     setLoading(true);
+    setErrors({});
 
     try {
-      // Simular delay de registro
-      await new Promise(resolve => setTimeout(resolve, 1500));
-
-      // Verificar si el email ya existe
-      const existingUsers = JSON.parse(localStorage.getItem('registeredUsers') || '[]');
-      const emailExists = existingUsers.find(user => user.email === formData.email);
-      
-      if (emailExists) {
-        setErrors({ email: 'Este email ya está registrado' });
-        setLoading(false);
-        return;
-      }
-
-      // Crear nuevo usuario
-      const newUser = {
-        id: Date.now(), // ID único basado en timestamp
+      // Preparar datos para enviar al backend
+      const registrationData = {
         nombre: formData.nombre.trim(),
         email: formData.email.toLowerCase(),
-        password: formData.password, // En producción, esto debería estar hasheado
-        role: formData.role,
-        ...(formData.role === 'student' && {
-          carrera: formData.carrera.trim(),
-          semestre: parseInt(formData.semestre)
-        }),
-        ...(formData.role === 'admin' && {
-          departamento: formData.departamento.trim()
-        }),
-        fechaRegistro: new Date().toISOString()
+        password: formData.password,
+        role: formData.role
       };
 
-      // Guardar en localStorage
-      const updatedUsers = [...existingUsers, newUser];
-      localStorage.setItem('registeredUsers', JSON.stringify(updatedUsers));
+      // Agregar campos específicos según el rol
+      if (formData.role === 'student') {
+        registrationData.carrera = formData.carrera.trim();
+        registrationData.semestre = parseInt(formData.semestre);
+      } else if (formData.role === 'admin') {
+        registrationData.departamento = formData.departamento.trim();
+      }
 
-      // Llamar función de registro exitoso
-      onRegister(newUser);
+      // Llamar al método register del useAuth que ahora usa el backend
+      const result = await onRegister(registrationData);
+      
+      if (!result.success) {
+        // Manejar errores específicos del backend
+        if (result.error.includes('email')) {
+          setErrors({ email: result.error });
+        } else {
+          setErrors({ general: result.error });
+        }
+      }
+      // Si es exitoso, onRegister se encarga del redireccionamiento
 
     } catch (error) {
       setErrors({ general: 'Error al registrar usuario. Intenta nuevamente.' });

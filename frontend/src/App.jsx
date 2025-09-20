@@ -27,13 +27,6 @@ const AppContent = () => {
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [authMode, setAuthMode] = useState('login'); // 'login' o 'register'
 
-  // Debug para ver el estado del usuario
-  React.useEffect(() => {
-    console.log('Usuario actual:', user);
-    console.log('Es admin:', isAdmin);
-    console.log('Vista activa:', activeView);
-  }, [user, isAdmin, activeView]);
-
   // Auto-ajustar vista cuando cambia el rol
   React.useEffect(() => {
     if (user) {
@@ -45,15 +38,21 @@ const AppContent = () => {
     }
   }, [user, isAdmin, activeView]);
 
-  // Handlers de autenticación
-  const handleLogin = (userData, role) => {
-    login(userData, role);
-    setAuthMode('login'); // Reset auth mode after successful login
+  // Handlers de autenticación actualizados para usar el backend
+  const handleLogin = async (email, password) => {
+    const result = await login(email, password);
+    if (result.success) {
+      setAuthMode('login'); // Reset auth mode after successful login
+    }
+    return result;
   };
 
-  const handleRegister = (userData) => {
-    register(userData);
-    setAuthMode('login'); // Reset auth mode after successful registration
+  const handleRegister = async (userData) => {
+    const result = await register(userData);
+    if (result.success) {
+      setAuthMode('login'); // Reset auth mode after successful registration
+    }
+    return result;
   };
 
   const handleLogout = () => {

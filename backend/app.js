@@ -90,11 +90,13 @@ app.get('/api/test-cors', (req, res) => {
 
 // Importar y usar rutas
 try {
+  const authRoutes = require('./routes/auth');    
   const studentRoutes = require('./routes/students');
   const evaluationRoutes = require('./routes/evaluations');
   const alertRoutes = require('./routes/alerts');
   const resourceRoutes = require('./routes/resources');
 
+  app.use('/api/auth', authRoutes)
   app.use('/api/students', studentRoutes);
   app.use('/api/evaluations', evaluationRoutes);
   app.use('/api/alerts', alertRoutes);

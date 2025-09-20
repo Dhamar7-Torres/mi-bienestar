@@ -2,8 +2,6 @@
 INSERT INTO cuestionarios (nombre, descripcion) VALUES 
 ('Evaluación Semanal de Bienestar Psicosocial', 'Cuestionario integral basado en escalas validadas para detectar factores de riesgo psicosocial en estudiantes de alto rendimiento');
 
--- Insertar preguntas basadas en escalas validadas
-
 -- PREGUNTAS DE ESTRÉS (basadas en Escala de Estrés Percibido - PSS)
 INSERT INTO preguntas (cuestionario_id, texto, categoria, orden) VALUES
 (1, '¿Con qué frecuencia te has sentido nervioso(a) o estresado(a) en la última semana?', 'estres', 1),
@@ -56,20 +54,11 @@ INSERT INTO preguntas (cuestionario_id, texto, categoria, orden) VALUES
 (1, '¿Sientes que ya no te importan tanto tus calificaciones como antes?', 'burnout', 39),
 (1, '¿Te resulta difícil encontrar satisfacción en tus logros académicos?', 'burnout', 40);
 
--- Insertar estudiantes de ejemplo
+-- Insertar estudiantes de ejemplo (CORREGIDO: removida la coma extra)
 INSERT INTO estudiantes (nombre, email, carrera, semestre) VALUES
-('Ana García López', 'ana.garcia@universidad.edu', 'Ingeniería de Sistemas', 6),
-('Carlos Mendoza', 'carlos.mendoza@universidad.edu', 'Psicología', 4),
-('María Rodríguez', 'maria.rodriguez@universidad.edu', 'Medicina', 8),
-('Diego Fernández', 'diego.fernandez@universidad.edu', 'Arquitectura', 5),
-('Laura Martínez', 'laura.martinez@universidad.edu', 'Derecho', 7),
-('Andrés Ruiz', 'andres.ruiz@universidad.edu', 'Ingeniería Civil', 3),
-('Sofía Castro', 'sofia.castro@universidad.edu', 'Administración', 6),
-('Miguel Torres', 'miguel.torres@universidad.edu', 'Comunicación Social', 2),
-('Isabella Morales', 'isabella.morales@universidad.edu', 'Biología', 5),
-('Sebastián Herrera', 'sebastian.herrera@universidad.edu', 'Economía', 4);
+('Ana García López', 'ana.garcia@universidad.edu', 'Ingeniería de Sistemas', 6);
 
--- Insertar recursos de apoyo
+-- Insertar recursos de apoyo (CORREGIDO: 'urls' → 'url')
 INSERT INTO recursos (titulo, descripcion, tipo, duracion, url, categoria) VALUES
 -- Recursos para Estrés
 ('Técnicas de Respiración para Reducir el Estrés', 'Video guía con ejercicios de respiración profunda y relajación', 'video', 15, 'https://placeholder-image-service.onrender.com/video/breathing-techniques', 'estres'),

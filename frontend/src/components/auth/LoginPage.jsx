@@ -49,29 +49,17 @@ export const LoginPage = ({ onLogin, onGoToRegister }) => {
     }
 
     setLoading(true);
+    setErrors({});
 
     try {
-      // Simular delay de login
-      await new Promise(resolve => setTimeout(resolve, 1500));
-
-      // Obtener usuarios registrados
-      const registeredUsers = JSON.parse(localStorage.getItem('registeredUsers') || '[]');
+      // Llamar al método login del useAuth que ahora usa el backend
+      const result = await onLogin(formData.email, formData.password);
       
-      // Buscar usuario con email y contraseña
-      const user = registeredUsers.find(u => 
-        u.email.toLowerCase() === formData.email.toLowerCase() && 
-        u.password === formData.password
-      );
-
-      if (!user) {
-        setErrors({ general: 'Email o contraseña incorrectos' });
-        setLoading(false);
-        return;
+      if (!result.success) {
+        setErrors({ general: result.error });
       }
-
-      // Login exitoso
-      onLogin(user, user.role);
-
+      // Si es exitoso, onLogin se encarga del redireccionamiento
+      
     } catch (error) {
       setErrors({ general: 'Error al iniciar sesión. Intenta nuevamente.' });
     } finally {
