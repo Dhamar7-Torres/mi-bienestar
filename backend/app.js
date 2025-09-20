@@ -23,7 +23,7 @@ if (process.env.NODE_ENV === 'development') {
 
 // Configuración CORS actualizada para puerto 5173
 const corsOptions = {
-  origin: process.env.CLIENT_URL || 'http://localhost:5173',
+  origin: process.env.CLIENT_URL || 'http://localhost:5174',
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'PATCH'],
   allowedHeaders: ['Content-Type', 'Authorization', 'Accept', 'Origin', 'X-Requested-With'],
@@ -65,7 +65,7 @@ app.get('/api/health', async (req, res) => {
       server: {
         port: process.env.PORT || 4000,
         node_env: process.env.NODE_ENV || 'development',
-        client_url: process.env.CLIENT_URL || 'http://localhost:5173'
+        client_url: process.env.CLIENT_URL || 'http://localhost:5174'
       }
     });
   } catch (error) {
@@ -142,7 +142,7 @@ const startServer = async () => {
       console.log('='.repeat(50));
       console.log(`🌐 Servidor: http://localhost:${PORT}`);
       console.log(`🏥 Health check: http://localhost:${PORT}/api/health`);
-      console.log(`🔗 CORS permitido: ${process.env.CLIENT_URL || 'http://localhost:5173'}`);
+      console.log(`🔗 CORS permitido: ${process.env.CLIENT_URL || 'http://localhost:5174'}`);
       console.log(`🗄️ Base de datos: ${dbConnected ? '✅ Conectada' : '❌ Desconectada'}`);
       console.log(`🔧 Entorno: ${process.env.NODE_ENV || 'development'}`);
       console.log('='.repeat(50) + '\n');
