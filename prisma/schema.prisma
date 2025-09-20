@@ -8,166 +8,98 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-
 model Usuario {
-  id                 Int       @id @default(autoincrement())
-  nombreCompleto     String    @map("nombre_completo") @db.VarChar(255)
-  correo            String    @unique @db.VarChar(255)
-  contrasenaHash    String    @map("contrasena_hash") @db.VarChar(255)
-  tipoUsuario       TipoUsuario @map("tipo_usuario")
-  fechaCreacion     DateTime  @default(now()) @map("fecha_creacion")
-  fechaActualizacion DateTime @updatedAt @map("fecha_actualizacion")
-  
+  id                 Int           @id @default(autoincrement())
+  nombreCompleto     String        @map("nombre_completo") @db.VarChar(255)
+  correo             String        @unique @db.VarChar(255)
+  contrasenaHash     String        @map("contrasena_hash") @db.VarChar(255)
+  tipoUsuario        String        @map("tipo_usuario") @db.VarChar(20)
+  fechaCreacion      DateTime?     @default(now()) @map("fecha_creacion") @db.Timestamp(6)
+  fechaActualizacion DateTime?     @default(now()) @updatedAt @map("fecha_actualizacion") @db.Timestamp(6)
+  coordinador        Coordinador[]
+  estudiante         Estudiante[]
 
-  estudiante        Estudiante?
-  coordinador       Coordinador?
-  
+  @@index([correo], map: "idx_usuarios_correo")
+  @@index([tipoUsuario], map: "idx_usuarios_tipo")
   @@map("usuarios")
 }
 
-
 model Estudiante {
-  id                    Int       @id @default(autoincrement())
-  usuarioId             Int       @unique @map("usuario_id")
-  carrera              String    @db.VarChar(255)
-  semestre             Int
-  nivelEstresActual    Int       @default(0) @map("nivel_estres_actual")
-  nivelBurnoutActual   Int       @default(0) @map("nivel_burnout_actual")
-  estadoRiesgo         NivelRiesgo @default(BAJO) @map("estado_riesgo")
-  fechaUltimaEvaluacion DateTime? @map("fecha_ultima_evaluacion")
-  
+  id                    Int          @id @default(autoincrement())
+  usuarioId             Int?         @map("usuario_id")
+  carrera               String       @db.VarChar(255)
+  semestre              Int
+  nivelEstresActual     Int?         @default(0) @map("nivel_estres_actual")
+  nivelBurnoutActual    Int?         @default(0) @map("nivel_burnout_actual")
+  estadoRiesgo          String?      @default("bajo") @map("estado_riesgo") @db.VarChar(20)
+  fechaUltimaEvaluacion DateTime?    @map("fecha_ultima_evaluacion") @db.Timestamp(6)
+  alertas               Alerta[]
+  usuario               Usuario?     @relation(fields: [usuarioId], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  evaluaciones          Evaluacion[]
 
-  usuario              Usuario   @relation(fields: [usuarioId], references: [id], onDelete: Cascade)
-  evaluaciones         Evaluacion[]
-  alertas              Alerta[]
-  
+  @@index([estadoRiesgo], map: "idx_estudiantes_riesgo")
   @@map("estudiantes")
 }
 
-
 model Coordinador {
-  id            Int     @id @default(autoincrement())
-  usuarioId     Int     @unique @map("usuario_id")
-  departamento  String  @db.VarChar(255)
-  
-  // Relaciones
-  usuario       Usuario @relation(fields: [usuarioId], references: [id], onDelete: Cascade)
-  
+  id           Int      @id @default(autoincrement())
+  usuarioId    Int?     @map("usuario_id")
+  departamento String   @db.VarChar(255)
+  usuario      Usuario? @relation(fields: [usuarioId], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
   @@map("coordinadores")
 }
 
-
 model Evaluacion {
-  id                Int       @id @default(autoincrement())
-  estudianteId      Int       @map("estudiante_id")
-  puntajeEstres     Int       @map("puntaje_estres")
-  puntajeBurnout    Int       @map("puntaje_burnout")
-  puntajeTotal      Int       @map("puntaje_total")
-  nivelRiesgo       NivelRiesgo @map("nivel_riesgo")
-  respuestas        Json      // Almacena las respuestas en formato JSON
-  fechaEvaluacion   DateTime  @default(now()) @map("fecha_evaluacion")
-  
-  // Relaciones
-  estudiante        Estudiante @relation(fields: [estudianteId], references: [id], onDelete: Cascade)
-  
+  id              Int         @id @default(autoincrement())
+  estudianteId    Int?        @map("estudiante_id")
+  puntajeEstres   Int         @map("puntaje_estres")
+  puntajeBurnout  Int         @map("puntaje_burnout")
+  puntajeTotal    Int         @map("puntaje_total")
+  nivelRiesgo     String      @map("nivel_riesgo") @db.VarChar(20)
+  respuestas      Json
+  fechaEvaluacion DateTime?   @default(now()) @map("fecha_evaluacion") @db.Timestamp(6)
+  estudiante      Estudiante? @relation(fields: [estudianteId], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@index([estudianteId], map: "idx_evaluaciones_estudiante")
+  @@index([fechaEvaluacion], map: "idx_evaluaciones_fecha")
   @@map("evaluaciones")
 }
 
-
 model Alerta {
-  id              Int       @id @default(autoincrement())
-  estudianteId    Int       @map("estudiante_id")
-  tipoAlerta      String    @map("tipo_alerta") @db.VarChar(50)
-  severidad       NivelRiesgo
-  mensaje         String    @db.Text
-  estaLeida       Boolean   @default(false) @map("esta_leida")
-  fechaCreacion   DateTime  @default(now()) @map("fecha_creacion")
-  
-  // Relaciones
-  estudiante      Estudiante @relation(fields: [estudianteId], references: [id], onDelete: Cascade)
-  
+  id            Int         @id @default(autoincrement())
+  estudianteId  Int?        @map("estudiante_id")
+  tipoAlerta    String      @map("tipo_alerta") @db.VarChar(50)
+  severidad     String      @db.VarChar(20)
+  mensaje       String
+  estaLeida     Boolean?    @default(false) @map("esta_leida")
+  fechaCreacion DateTime?   @default(now()) @map("fecha_creacion") @db.Timestamp(6)
+  estudiante    Estudiante? @relation(fields: [estudianteId], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@index([estudianteId], map: "idx_alertas_estudiante")
+  @@index([fechaCreacion], map: "idx_alertas_fecha")
   @@map("alertas")
 }
 
-
 model PreguntaEvaluacion {
-  id              Int       @id @default(autoincrement())
-  textoPregunta   String    @map("texto_pregunta") @db.Text
-  categoria       CategoriaEvaluacion
-  peso            Int       @default(1)
-  activa          Boolean   @default(true)
-  orden           Int       @default(0)
-  
+  id            Int      @id @default(autoincrement())
+  textoPregunta String   @map("texto_pregunta")
+  categoria     String   @db.VarChar(20)
+  peso          Int?     @default(1)
+  activa        Boolean? @default(true)
+
   @@map("preguntas_evaluacion")
 }
 
-
 model Recurso {
-  id              Int       @id @default(autoincrement())
-  titulo          String    @db.VarChar(255)
-  descripcion     String?   @db.Text
-  tipoRecurso     TipoRecurso @map("tipo_recurso")
-  urlContenido    String?   @map("url_contenido") @db.VarChar(500)
-  categoria       String?   @db.VarChar(100)
-  activo          Boolean   @default(true)
-  fechaCreacion   DateTime  @default(now()) @map("fecha_creacion")
-  
+  id            Int       @id @default(autoincrement())
+  titulo        String    @db.VarChar(255)
+  descripcion   String?
+  tipoRecurso   String    @map("tipo_recurso") @db.VarChar(50)
+  urlContenido  String?   @map("url_contenido") @db.VarChar(500)
+  categoria     String?   @db.VarChar(100)
+  activo        Boolean?  @default(true)
+  fechaCreacion DateTime? @default(now()) @map("fecha_creacion") @db.Timestamp(6)
+
   @@map("recursos")
 }
-
-
-model Sesion {
-  id              String    @id @default(cuid())
-  usuarioId       Int       @map("usuario_id")
-  token           String    @db.Text
-  fechaExpiracion DateTime  @map("fecha_expiracion")
-  activa          Boolean   @default(true)
-  fechaCreacion   DateTime  @default(now()) @map("fecha_creacion")
-  
-  @@map("sesiones")
-}
-
-
-model RegistroActividad {
-  id              Int       @id @default(autoincrement())
-  usuarioId       Int?      @map("usuario_id")
-  accion          String    @db.VarChar(100)
-  descripcion     String?   @db.Text
-  metadatos       Json?     // Información adicional como IP, user agent, etc.
-  fechaCreacion   DateTime  @default(now()) @map("fecha_creacion")
-  
-  @@map("registro_actividad")
-}
-
-// Enums
-enum TipoUsuario {
-  ESTUDIANTE @map("estudiante")
-  COORDINADOR @map("coordinador")
-  
-  @@map("tipo_usuario")
-}
-
-enum NivelRiesgo {
-  BAJO  @map("bajo")
-  MEDIO @map("medio")
-  ALTO  @map("alto")
-  
-  @@map("nivel_riesgo")
-}
-
-enum CategoriaEvaluacion {
-  ESTRES  @map("estres")
-  BURNOUT @map("burnout")
-  
-  @@map("categoria_evaluacion")
-}
-
-enum TipoRecurso {
-  VIDEO     @map("video")
-  ARTICULO  @map("articulo")
-  EJERCICIO @map("ejercicio")
-  TECNICA   @map("tecnica")
-  
-  @@map("tipo_recurso")
-}
-
