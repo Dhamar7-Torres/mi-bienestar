@@ -5,7 +5,7 @@ const rateLimit = require('express-rate-limit');
 require('dotenv').config();
 
 const app = express();
-const PORT = process.env.PORT || 5000;  
+const PORT = process.env.PORT || 5000;  // <-- TU VARIABLE CORRECTA
 
 // Middleware de seguridad
 app.use(helmet());
@@ -33,7 +33,7 @@ app.get('/api/health', (req, res) => {
     status: 'OK', 
     timestamp: new Date().toISOString(),
     message: 'Servidor funcionando correctamente',
-    environment: process.env.NODE_ENV || 'development'  
+    environment: process.env.NODE_ENV || 'development'  // <-- TU VARIABLE CORRECTA
   });
 });
 
@@ -42,8 +42,32 @@ app.get('/api/test', (req, res) => {
     message: 'Backend funcionando',
     frontend: 'http://localhost:5173',
     backend: `http://localhost:${PORT}`,
-    environment: process.env.NODE_ENV  
+    environment: process.env.NODE_ENV,
+    database: 'Connected to PostgreSQL'
   });
+});
+
+// Endpoint para probar BD
+app.get('/api/db-test', async (req, res) => {
+  try {
+    const { PrismaClient } = require('@prisma/client');
+    const prisma = new PrismaClient();
+    
+    const usuarios = await prisma.usuario.count();
+    const estudiantes = await prisma.estudiante.count();
+    
+    res.json({
+      status: 'BD conectada',
+      usuarios,
+      estudiantes,
+      message: 'Base de datos funcionando correctamente'
+    });
+  } catch (error) {
+    res.status(500).json({
+      status: 'Error BD',
+      error: error.message
+    });
+  }
 });
 
 // 404 handler
@@ -59,7 +83,7 @@ app.use((err, req, res, next) => {
   console.error(err.stack);
   res.status(500).json({ 
     message: 'Error interno del servidor',
-    error: process.env.NODE_ENV === 'development' ? err.message : {}  
+    error: process.env.NODE_ENV === 'development' ? err.message : {}
   });
 });
 
@@ -67,5 +91,6 @@ app.listen(PORT, () => {
   console.log(`🚀 Servidor corriendo en puerto ${PORT}`);
   console.log(`📊 API disponible en http://localhost:${PORT}/api`);
   console.log(`🏥 Health check: http://localhost:${PORT}/api/health`);
-  console.log(`🌍 Entorno: ${process.env.NODE_ENV || 'development'}`);  
+  console.log(`🗄️ DB test: http://localhost:${PORT}/api/db-test`);
+  console.log(`🌍 Entorno: ${process.env.NODE_ENV || 'development'}`);
 });
