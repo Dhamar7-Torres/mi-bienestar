@@ -18,6 +18,21 @@ const MiPerfil: React.FC = () => {
   const [subiendoFoto, setSubiendoFoto] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
+  
+  // Estados para modales
+  const [modalCambiarContrasena, setModalCambiarContrasena] = useState(false);
+  const [modalEliminarCuenta, setModalEliminarCuenta] = useState(false);
+  const [datosContrasena, setDatosContrasena] = useState({
+    contrasenaActual: '',
+    contrasenaNueva: '',
+    confirmarContrasena: ''
+  });
+  const [datosEliminar, setDatosEliminar] = useState({
+    emailConfirmacion: '',
+    textConfirmacion: ''
+  });
+  const [cargandoContrasena, setCargandoContrasena] = useState(false);
+  const [cargandoEliminar, setCargandoEliminar] = useState(false);
 
   // Redireccionar si no está autenticado
   useEffect(() => {
@@ -35,19 +50,11 @@ const MiPerfil: React.FC = () => {
         setCargando(true);
         setError(null);
         
-        console.log('🔄 Cargando perfil completo desde la API...');
-        
         const response = await apiService.getProfile();
         
-        console.log('📥 Respuesta completa de la API:', response);
-        
         if (response.success && response.data) {
-          // El backend envía los datos en response.data.usuario
           const datosUsuario = response.data.usuario || response.data;
           
-          console.log('👤 Datos del usuario extraídos:', datosUsuario);
-          
-          // Asegurar que tenemos la estructura correcta
           const usuarioCompleto: UsuarioCompleto = {
             id: datosUsuario.id,
             nombreCompleto: datosUsuario.nombreCompleto,
@@ -58,8 +65,6 @@ const MiPerfil: React.FC = () => {
             coordinador: datosUsuario.coordinador || null,
             fechaActualizacion: ''
           };
-          
-          console.log('✅ Usuario completo estructurado:', usuarioCompleto);
           
           setPerfilCompleto(usuarioCompleto);
           
@@ -76,12 +81,9 @@ const MiPerfil: React.FC = () => {
         }
         
       } catch (err: any) {
-        console.error('❌ Error al cargar perfil completo:', err);
         setError(err.message || 'Error al cargar el perfil');
         
-        // Como fallback, usar datos del contexto si están disponibles
         if (usuario) {
-          console.log('🔄 Usando datos del contexto como fallback:', usuario);
           setPerfilCompleto(usuario);
           setDatosEditados({
             nombreCompleto: usuario.nombreCompleto || '',
@@ -113,13 +115,11 @@ const MiPerfil: React.FC = () => {
     const file = event.target.files?.[0];
     if (!file) return;
 
-    // Validar tipo de archivo
     if (!file.type.startsWith('image/')) {
       setError('Por favor selecciona una imagen válida');
       return;
     }
 
-    // Validar tamaño (máximo 5MB)
     if (file.size > 5 * 1024 * 1024) {
       setError('La imagen debe ser menor a 5MB');
       return;
@@ -129,12 +129,8 @@ const MiPerfil: React.FC = () => {
       setSubiendoFoto(true);
       setError(null);
       
-      // Crear URL temporal para preview
       const tempUrl = URL.createObjectURL(file);
       setAvatarUrl(tempUrl);
-
-      // Aquí normalmente subirías la imagen al servidor
-      console.log('Imagen seleccionada:', file.name);
       
     } catch (err: any) {
       setError(err.message || 'Error al subir la imagen');
@@ -149,9 +145,6 @@ const MiPerfil: React.FC = () => {
       setGuardando(true);
       setError(null);
       
-      console.log('💾 Guardando cambios:', datosEditados);
-      
-      // Filtrar solo los campos que han cambiado y no están vacíos
       const cambiosFiltrados = Object.entries(datosEditados).reduce((acc, [key, value]) => {
         if (value !== undefined && value !== null && value !== '') {
           acc[key as keyof ActualizacionPerfil] = value;
@@ -159,21 +152,16 @@ const MiPerfil: React.FC = () => {
         return acc;
       }, {} as ActualizacionPerfil);
       
-      console.log('📝 Cambios filtrados a enviar:', cambiosFiltrados);
-      
       await updateProfile(cambiosFiltrados);
       
-      // Recargar los datos actualizados desde la API
       const response = await apiService.getProfile();
       if (response.success && response.data) {
         const usuarioActualizado = response.data.usuario || response.data;
         setPerfilCompleto(usuarioActualizado);
-        console.log('✅ Perfil actualizado y recargado');
       }
       
       setModoEdicion(false);
     } catch (err: any) {
-      console.error('❌ Error al guardar cambios:', err);
       setError(err.message || 'Error al guardar los cambios');
     } finally {
       setGuardando(false);
@@ -181,7 +169,6 @@ const MiPerfil: React.FC = () => {
   };
 
   const cancelarEdicion = () => {
-    // Restaurar datos originales
     setDatosEditados({
       nombreCompleto: perfilCompleto?.nombreCompleto || '',
       carrera: perfilCompleto?.estudiante?.carrera || '',
@@ -199,52 +186,72 @@ const MiPerfil: React.FC = () => {
     navigate(rutaAnterior);
   };
 
-  const handleCambiarContrasena = () => {
-    // Implementar modal o navegación para cambiar contraseña
-    console.log('Cambiar contraseña');
-    alert('Funcionalidad de cambiar contraseña próximamente');
-  };
+  // Función para cambiar contraseña
+  const handleCambiarContrasena = async () => {
+    if (!datosContrasena.contrasenaActual || !datosContrasena.contrasenaNueva) {
+      setError('Todos los campos son obligatorios');
+      return;
+    }
 
-  const handleConfiguracionNotificaciones = () => {
-    // Implementar configuración de notificaciones
-    console.log('Configurar notificaciones');
-    alert('Configuración de notificaciones próximamente');
-  };
+    if (datosContrasena.contrasenaNueva !== datosContrasena.confirmarContrasena) {
+      setError('Las contraseñas no coinciden');
+      return;
+    }
 
-  const handleDescargarDatos = async () => {
+    if (datosContrasena.contrasenaNueva.length < 6) {
+      setError('La nueva contraseña debe tener al menos 6 caracteres');
+      return;
+    }
+
     try {
-      // Crear datos para descargar
-      const datosDescarga = {
-        usuario: perfilCompleto,
-        fechaDescarga: new Date().toISOString(),
-        version: '1.0'
-      };
-      
-      const blob = new Blob([JSON.stringify(datosDescarga, null, 2)], {
-        type: 'application/json'
+      setCargandoContrasena(true);
+      setError(null);
+
+      await apiService.changePassword({
+        contrasenaActual: datosContrasena.contrasenaActual,
+        contrasenaNueva: datosContrasena.contrasenaNueva
       });
-      
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = `mi-perfil-${perfilCompleto?.nombreCompleto?.replace(/\s+/g, '-')}.json`;
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
-      URL.revokeObjectURL(url);
-    } catch (err) {
-      setError('Error al descargar los datos');
+
+      setModalCambiarContrasena(false);
+      setDatosContrasena({
+        contrasenaActual: '',
+        contrasenaNueva: '',
+        confirmarContrasena: ''
+      });
+
+      alert('Contraseña cambiada exitosamente');
+    } catch (err: any) {
+      setError(err.message || 'Error al cambiar la contraseña');
+    } finally {
+      setCargandoContrasena(false);
     }
   };
 
-  const handleEliminarCuenta = () => {
-    const confirmacion = window.confirm(
-      '¿Estás seguro de que quieres eliminar tu cuenta? Esta acción no se puede deshacer.'
-    );
-    
-    if (confirmacion) {
-      console.log('Eliminar cuenta');
-      alert('Funcionalidad de eliminar cuenta próximamente');
+  // Función para eliminar cuenta
+  const handleEliminarCuenta = async () => {
+    if (datosEliminar.emailConfirmacion !== perfilCompleto?.correo) {
+      setError('El email de confirmación no coincide');
+      return;
+    }
+
+    if (datosEliminar.textConfirmacion !== 'ELIMINAR') {
+      setError('Debes escribir "ELIMINAR" para confirmar');
+      return;
+    }
+
+    try {
+      setCargandoEliminar(true);
+      setError(null);
+
+      // Aquí iría la llamada a la API para eliminar cuenta
+      // await apiService.deleteAccount();
+      
+      alert('Funcionalidad de eliminar cuenta será implementada próximamente');
+      setModalEliminarCuenta(false);
+    } catch (err: any) {
+      setError(err.message || 'Error al eliminar la cuenta');
+    } finally {
+      setCargandoEliminar(false);
     }
   };
 
@@ -273,12 +280,10 @@ const MiPerfil: React.FC = () => {
     }
   };
 
-  // Mostrar loading mientras se autentica o carga
   if (authLoading || cargando) {
     return <Loading />;
   }
 
-  // Mostrar error si no se pudo cargar el perfil
   if (!perfilCompleto && error) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-sky-200 via-cyan-300 to-white flex items-center justify-center">
@@ -301,7 +306,6 @@ const MiPerfil: React.FC = () => {
     );
   }
 
-  // Usar datos del contexto como fallback si no hay perfil completo
   const datosUsuario = perfilCompleto || usuario;
 
   if (!datosUsuario) {
@@ -323,16 +327,6 @@ const MiPerfil: React.FC = () => {
   return (
     <div className="min-h-screen bg-gradient-to-br from-sky-200 via-cyan-300 to-white py-8 px-4">
       <div className="max-w-4xl mx-auto">
-        {/* Debug info - remover en producción */}
-        {process.env.NODE_ENV === 'development' && (
-          <div className="mb-4 p-4 bg-gray-100 rounded-lg text-xs">
-            <details>
-              <summary className="cursor-pointer font-bold">Debug Info (hacer click para expandir)</summary>
-              <pre className="mt-2 overflow-auto">{JSON.stringify(datosUsuario, null, 2)}</pre>
-            </details>
-          </div>
-        )}
-
         {/* Botón de volver */}
         <button
           onClick={handleVolver}
@@ -364,7 +358,6 @@ const MiPerfil: React.FC = () => {
                   )}
                 </div>
                 
-                {/* Botón de cámara para cambiar foto */}
                 <button
                   onClick={handleAvatarClick}
                   className="absolute -bottom-1 -right-1 bg-white border-2 border-cyan-500 text-cyan-600 p-2 rounded-full hover:bg-cyan-50 transition-colors shadow-lg"
@@ -383,7 +376,6 @@ const MiPerfil: React.FC = () => {
                   )}
                 </button>
                 
-                {/* Input oculto para seleccionar archivo */}
                 <input
                   type="file"
                   ref={fileInputRef}
@@ -606,14 +598,14 @@ const MiPerfil: React.FC = () => {
           
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <button 
-              onClick={handleCambiarContrasena}
+              onClick={() => setModalCambiarContrasena(true)}
               className="bg-gradient-to-r from-blue-500 to-blue-600 text-white px-4 py-3 rounded-xl hover:from-blue-600 hover:to-blue-700 transition-all duration-200 font-medium shadow-lg hover:shadow-xl transform hover:-translate-y-0.5"
             >
               Cambiar Contraseña
             </button>
             
             <button 
-              onClick={handleConfiguracionNotificaciones}
+              onClick={() => alert('Configuración de notificaciones próximamente')}
               className="bg-gradient-to-r from-gray-500 to-gray-600 text-white px-4 py-3 rounded-xl hover:from-gray-600 hover:to-gray-700 transition-all duration-200 font-medium shadow-lg hover:shadow-xl transform hover:-translate-y-0.5"
             >
               Configurar Notificaciones
@@ -631,21 +623,181 @@ const MiPerfil: React.FC = () => {
             )}
             
             <button 
-              onClick={handleDescargarDatos}
-              className="bg-gradient-to-r from-green-500 to-green-600 text-white px-4 py-3 rounded-xl hover:from-green-600 hover:to-green-700 transition-all duration-200 font-medium shadow-lg hover:shadow-xl transform hover:-translate-y-0.5"
-            >
-              Descargar Mis Datos
-            </button>
-            
-            <button 
-              onClick={handleEliminarCuenta}
-              className="bg-gradient-to-r from-red-500 to-red-600 text-white px-4 py-3 rounded-xl hover:from-red-600 hover:to-red-700 transition-all duration-200 font-medium shadow-lg hover:shadow-xl transform hover:-translate-y-0.5"
+              onClick={() => setModalEliminarCuenta(true)}
+              className="bg-gradient-to-r from-red-500 to-red-600 text-white px-4 py-3 rounded-xl hover:from-red-600 hover:to-red-700 transition-all duration-200 font-medium shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 md:col-span-2"
             >
               Eliminar Cuenta
             </button>
           </div>
         </div>
       </div>
+
+      {/* Modal Cambiar Contraseña */}
+      {modalCambiarContrasena && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full p-6">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-lg font-semibold text-gray-900">Cambiar Contraseña</h3>
+              <button
+                onClick={() => {
+                  setModalCambiarContrasena(false);
+                  setDatosContrasena({ contrasenaActual: '', contrasenaNueva: '', confirmarContrasena: '' });
+                  setError(null);
+                }}
+                className="text-gray-400 hover:text-gray-600"
+              >
+                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+
+            <div className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Contraseña Actual</label>
+                <input
+                  type="password"
+                  value={datosContrasena.contrasenaActual}
+                  onChange={(e) => setDatosContrasena(prev => ({ ...prev, contrasenaActual: e.target.value }))}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  placeholder="Ingresa tu contraseña actual"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Nueva Contraseña</label>
+                <input
+                  type="password"
+                  value={datosContrasena.contrasenaNueva}
+                  onChange={(e) => setDatosContrasena(prev => ({ ...prev, contrasenaNueva: e.target.value }))}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  placeholder="Ingresa tu nueva contraseña"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Confirmar Nueva Contraseña</label>
+                <input
+                  type="password"
+                  value={datosContrasena.confirmarContrasena}
+                  onChange={(e) => setDatosContrasena(prev => ({ ...prev, confirmarContrasena: e.target.value }))}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  placeholder="Confirma tu nueva contraseña"
+                />
+              </div>
+
+              {error && (
+                <div className="p-3 bg-red-50 border border-red-200 rounded-xl">
+                  <p className="text-red-600 text-sm">{error}</p>
+                </div>
+              )}
+
+              <div className="flex space-x-3">
+                <button
+                  onClick={() => {
+                    setModalCambiarContrasena(false);
+                    setDatosContrasena({ contrasenaActual: '', contrasenaNueva: '', confirmarContrasena: '' });
+                    setError(null);
+                  }}
+                  className="flex-1 bg-gray-200 text-gray-800 py-2 px-4 rounded-xl hover:bg-gray-300 transition-colors"
+                >
+                  Cancelar
+                </button>
+                <button
+                  onClick={handleCambiarContrasena}
+                  disabled={cargandoContrasena}
+                  className="flex-1 bg-blue-500 text-white py-2 px-4 rounded-xl hover:bg-blue-600 transition-colors disabled:opacity-50"
+                >
+                  {cargandoContrasena ? 'Cambiando...' : 'Cambiar'}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal Eliminar Cuenta */}
+      {modalEliminarCuenta && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full p-6">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-lg font-semibold text-red-600">Eliminar Cuenta</h3>
+              <button
+                onClick={() => {
+                  setModalEliminarCuenta(false);
+                  setDatosEliminar({ emailConfirmacion: '', textConfirmacion: '' });
+                  setError(null);
+                }}
+                className="text-gray-400 hover:text-gray-600"
+              >
+                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+
+            <div className="mb-4 p-4 bg-red-50 border border-red-200 rounded-xl">
+              <p className="text-red-800 text-sm font-medium">
+                ⚠️ Esta acción es irreversible. Se eliminarán todos tus datos permanentemente.
+              </p>
+            </div>
+
+            <div className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Confirma tu email: <span className="font-semibold">{datosUsuario.correo}</span>
+                </label>
+                <input
+                  type="email"
+                  value={datosEliminar.emailConfirmacion}
+                  onChange={(e) => setDatosEliminar(prev => ({ ...prev, emailConfirmacion: e.target.value }))}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-red-500"
+                  placeholder="Escribe tu email para confirmar"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Escribe "ELIMINAR" para confirmar
+                </label>
+                <input
+                  type="text"
+                  value={datosEliminar.textConfirmacion}
+                  onChange={(e) => setDatosEliminar(prev => ({ ...prev, textConfirmacion: e.target.value }))}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-red-500"
+                  placeholder="ELIMINAR"
+                />
+              </div>
+
+              {error && (
+                <div className="p-3 bg-red-50 border border-red-200 rounded-xl">
+                  <p className="text-red-600 text-sm">{error}</p>
+                </div>
+              )}
+
+              <div className="flex space-x-3">
+                <button
+                  onClick={() => {
+                    setModalEliminarCuenta(false);
+                    setDatosEliminar({ emailConfirmacion: '', textConfirmacion: '' });
+                    setError(null);
+                  }}
+                  className="flex-1 bg-gray-200 text-gray-800 py-2 px-4 rounded-xl hover:bg-gray-300 transition-colors"
+                >
+                  Cancelar
+                </button>
+                <button
+                  onClick={handleEliminarCuenta}
+                  disabled={cargandoEliminar}
+                  className="flex-1 bg-red-500 text-white py-2 px-4 rounded-xl hover:bg-red-600 transition-colors disabled:opacity-50"
+                >
+                  {cargandoEliminar ? 'Eliminando...' : 'Eliminar Cuenta'}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
