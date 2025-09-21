@@ -21,6 +21,7 @@ import StudentDetails from './components/Coordinator/StudentDetails';
 
 // Componentes comunes
 import Loading from './components/Common/Loading';
+import MiPerfil from './components/Common/MiPerfil';
 
 // Componente para rutas protegidas
 interface ProtectedRouteProps {
@@ -129,10 +130,16 @@ function AppRoutes() {
         </ProtectedRoute>
       } />
 
-      {/* NUEVA RUTA - Historial de evaluaciones */}
       <Route path={ROUTES.STUDENT_HISTORY} element={
         <ProtectedRoute requiredRole="ESTUDIANTE">
           <EvaluationHistory />
+        </ProtectedRoute>
+      } />
+
+      {/* NUEVA RUTA - Perfil de estudiante */}
+      <Route path="/estudiante/perfil" element={
+        <ProtectedRoute requiredRole="ESTUDIANTE">
+          <MiPerfil />
         </ProtectedRoute>
       } />
 
@@ -149,7 +156,6 @@ function AppRoutes() {
         </ProtectedRoute>
       } />
 
-      {/* NUEVA RUTA - Detalles de estudiante específico */}
       <Route path="/coordinador/estudiantes/:studentId" element={
         <ProtectedRoute requiredRole="COORDINADOR">
           <StudentDetails />
@@ -159,6 +165,13 @@ function AppRoutes() {
       <Route path={ROUTES.COORDINATOR_ALERTS} element={
         <ProtectedRoute requiredRole="COORDINADOR">
           <Alerts />
+        </ProtectedRoute>
+      } />
+
+      {/* NUEVA RUTA - Perfil de coordinador */}
+      <Route path="/coordinador/perfil" element={
+        <ProtectedRoute requiredRole="COORDINADOR">
+          <MiPerfil />
         </ProtectedRoute>
       } />
 
@@ -235,4 +248,3 @@ function App() {
 }
 
 export default App;
-

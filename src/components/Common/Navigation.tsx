@@ -88,6 +88,11 @@ function Navigation() {
     }
   };
 
+  // Función para obtener la ruta del perfil según el tipo de usuario
+  const getProfileRoute = () => {
+    return usuario?.tipoUsuario === 'ESTUDIANTE' ? '/estudiante/perfil' : '/coordinador/perfil';
+  };
+
   return (
     <nav className="bg-white/90 backdrop-blur-md shadow-lg border-b border-white/20 sticky top-0 z-50" style={{ fontFamily: "'Inter', 'Segoe UI', sans-serif" }}>
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -212,7 +217,7 @@ function Navigation() {
                     {/* Opciones del menú */}
                     <div className="py-2">
                       <Link
-                        to={usuario?.tipoUsuario === 'ESTUDIANTE' ? ROUTES.STUDENT_PROFILE : ROUTES.COORDINATOR_PROFILE}
+                        to={getProfileRoute()}
                         className="flex items-center px-4 py-3 text-sm text-gray-700 hover:bg-white/50 transition-all duration-200 font-medium"
                         onClick={() => setShowUserMenu(false)}
                       >
