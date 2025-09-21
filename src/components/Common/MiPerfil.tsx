@@ -6,7 +6,7 @@ import { UsuarioCompleto, ActualizacionPerfil } from '../../types';
 import Loading from '../Common/Loading';
 
 const MiPerfil: React.FC = () => {
-  const { usuario, updateProfile } = useAuth();
+  const { usuario, updateProfile, isAuthenticated, isLoading: authLoading } = useAuth();
   const navigate = useNavigate();
   const fileInputRef = useRef<HTMLInputElement>(null);
   
@@ -19,55 +19,84 @@ const MiPerfil: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
 
-  // Usar directamente los datos del usuario del contexto si están disponibles
+  // Redireccionar si no está autenticado
   useEffect(() => {
-    const cargarPerfil = async () => {
+    if (!authLoading && !isAuthenticated) {
+      navigate('/login');
+    }
+  }, [isAuthenticated, authLoading, navigate]);
+
+  // Cargar perfil completo desde la API
+  useEffect(() => {
+    const cargarPerfilCompleto = async () => {
+      if (!isAuthenticated || authLoading) return;
+
       try {
         setCargando(true);
+        setError(null);
         
-        // Si ya tenemos datos del usuario en el contexto, usarlos primero
-        if (usuario) {
-          setPerfilCompleto(usuario);
-          setDatosEditados({
-            nombreCompleto: usuario.nombreCompleto,
-            carrera: usuario.estudiante?.carrera || '',
-            semestre: usuario.estudiante?.semestre || 1,
-            departamento: usuario.coordinador?.departamento || ''
-          });
-        }
-
-        // Intentar obtener datos más completos de la API
+        console.log('🔄 Cargando perfil completo desde la API...');
+        
         const response = await apiService.getProfile();
+        
+        console.log('📥 Respuesta completa de la API:', response);
+        
         if (response.success && response.data) {
-          setPerfilCompleto(response.data);
+          // El backend envía los datos en response.data.usuario
+          const datosUsuario = response.data.usuario || response.data;
+          
+          console.log('👤 Datos del usuario extraídos:', datosUsuario);
+          
+          // Asegurar que tenemos la estructura correcta
+          const usuarioCompleto: UsuarioCompleto = {
+            id: datosUsuario.id,
+            nombreCompleto: datosUsuario.nombreCompleto,
+            correo: datosUsuario.correo,
+            tipoUsuario: datosUsuario.tipoUsuario,
+            fechaCreacion: datosUsuario.fechaCreacion,
+            estudiante: datosUsuario.estudiante || null,
+            coordinador: datosUsuario.coordinador || null,
+            fechaActualizacion: ''
+          };
+          
+          console.log('✅ Usuario completo estructurado:', usuarioCompleto);
+          
+          setPerfilCompleto(usuarioCompleto);
+          
+          // Inicializar datos de edición
           setDatosEditados({
-            nombreCompleto: response.data.nombreCompleto,
-            carrera: response.data.estudiante?.carrera || '',
-            semestre: response.data.estudiante?.semestre || 1,
-            departamento: response.data.coordinador?.departamento || ''
+            nombreCompleto: usuarioCompleto.nombreCompleto || '',
+            carrera: usuarioCompleto.estudiante?.carrera || '',
+            semestre: usuarioCompleto.estudiante?.semestre || 1,
+            departamento: usuarioCompleto.coordinador?.departamento || ''
           });
+          
+        } else {
+          throw new Error(response.message || 'No se pudieron cargar los datos del perfil');
         }
+        
       } catch (err: any) {
-        console.error('Error al cargar perfil:', err);
-        // Si falla la API pero tenemos datos del contexto, continuar con esos
+        console.error('❌ Error al cargar perfil completo:', err);
+        setError(err.message || 'Error al cargar el perfil');
+        
+        // Como fallback, usar datos del contexto si están disponibles
         if (usuario) {
+          console.log('🔄 Usando datos del contexto como fallback:', usuario);
           setPerfilCompleto(usuario);
           setDatosEditados({
-            nombreCompleto: usuario.nombreCompleto,
+            nombreCompleto: usuario.nombreCompleto || '',
             carrera: usuario.estudiante?.carrera || '',
             semestre: usuario.estudiante?.semestre || 1,
             departamento: usuario.coordinador?.departamento || ''
           });
-        } else {
-          setError(err.message || 'Error al cargar el perfil');
         }
       } finally {
         setCargando(false);
       }
     };
 
-    cargarPerfil();
-  }, [usuario]);
+    cargarPerfilCompleto();
+  }, [isAuthenticated, authLoading, usuario]);
 
   const handleInputChange = (campo: keyof ActualizacionPerfil, valor: any) => {
     setDatosEditados(prev => ({
@@ -105,11 +134,6 @@ const MiPerfil: React.FC = () => {
       setAvatarUrl(tempUrl);
 
       // Aquí normalmente subirías la imagen al servidor
-      // const formData = new FormData();
-      // formData.append('avatar', file);
-      // const response = await apiService.uploadAvatar(formData);
-      
-      // Por ahora solo mostrar la imagen localmente
       console.log('Imagen seleccionada:', file.name);
       
     } catch (err: any) {
@@ -125,16 +149,31 @@ const MiPerfil: React.FC = () => {
       setGuardando(true);
       setError(null);
       
-      await updateProfile(datosEditados);
+      console.log('💾 Guardando cambios:', datosEditados);
       
-      // Recargar los datos actualizados
+      // Filtrar solo los campos que han cambiado y no están vacíos
+      const cambiosFiltrados = Object.entries(datosEditados).reduce((acc, [key, value]) => {
+        if (value !== undefined && value !== null && value !== '') {
+          acc[key as keyof ActualizacionPerfil] = value;
+        }
+        return acc;
+      }, {} as ActualizacionPerfil);
+      
+      console.log('📝 Cambios filtrados a enviar:', cambiosFiltrados);
+      
+      await updateProfile(cambiosFiltrados);
+      
+      // Recargar los datos actualizados desde la API
       const response = await apiService.getProfile();
       if (response.success && response.data) {
-        setPerfilCompleto(response.data);
+        const usuarioActualizado = response.data.usuario || response.data;
+        setPerfilCompleto(usuarioActualizado);
+        console.log('✅ Perfil actualizado y recargado');
       }
       
       setModoEdicion(false);
     } catch (err: any) {
+      console.error('❌ Error al guardar cambios:', err);
       setError(err.message || 'Error al guardar los cambios');
     } finally {
       setGuardando(false);
@@ -142,8 +181,9 @@ const MiPerfil: React.FC = () => {
   };
 
   const cancelarEdicion = () => {
+    // Restaurar datos originales
     setDatosEditados({
-      nombreCompleto: perfilCompleto?.nombreCompleto,
+      nombreCompleto: perfilCompleto?.nombreCompleto || '',
       carrera: perfilCompleto?.estudiante?.carrera || '',
       semestre: perfilCompleto?.estudiante?.semestre || 1,
       departamento: perfilCompleto?.coordinador?.departamento || ''
@@ -233,19 +273,42 @@ const MiPerfil: React.FC = () => {
     }
   };
 
-  if (cargando) {
+  // Mostrar loading mientras se autentica o carga
+  if (authLoading || cargando) {
     return <Loading />;
   }
 
-  // Usar datos del usuario del contexto como fallback
+  // Mostrar error si no se pudo cargar el perfil
+  if (!perfilCompleto && error) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-sky-200 via-cyan-300 to-white flex items-center justify-center">
+        <div className="bg-white/90 backdrop-blur-sm p-8 rounded-2xl shadow-xl border border-white/30 max-w-md">
+          <div className="text-center">
+            <svg className="mx-auto h-12 w-12 text-red-500 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.732-.833-2.464 0L4.35 15.5c-.77.833.192 2.5 1.732 2.5z" />
+            </svg>
+            <h3 className="text-lg font-semibold text-gray-900 mb-2">Error al cargar el perfil</h3>
+            <p className="text-red-600 font-medium mb-4">{error}</p>
+            <button
+              onClick={handleVolver}
+              className="bg-blue-500 text-white px-6 py-2 rounded-xl hover:bg-blue-600 transition-colors"
+            >
+              Volver al Dashboard
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // Usar datos del contexto como fallback si no hay perfil completo
   const datosUsuario = perfilCompleto || usuario;
 
   if (!datosUsuario) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-sky-200 via-cyan-300 to-white flex items-center justify-center">
         <div className="bg-white/90 backdrop-blur-sm p-8 rounded-2xl shadow-xl border border-white/30">
-          <p className="text-red-600 font-semibold">Error al cargar el perfil</p>
-          {error && <p className="text-gray-600 mt-2">{error}</p>}
+          <p className="text-red-600 font-semibold">No se pudieron cargar los datos del usuario</p>
           <button
             onClick={handleVolver}
             className="mt-4 bg-blue-500 text-white px-4 py-2 rounded-xl hover:bg-blue-600 transition-colors"
@@ -260,6 +323,16 @@ const MiPerfil: React.FC = () => {
   return (
     <div className="min-h-screen bg-gradient-to-br from-sky-200 via-cyan-300 to-white py-8 px-4">
       <div className="max-w-4xl mx-auto">
+        {/* Debug info - remover en producción */}
+        {process.env.NODE_ENV === 'development' && (
+          <div className="mb-4 p-4 bg-gray-100 rounded-lg text-xs">
+            <details>
+              <summary className="cursor-pointer font-bold">Debug Info (hacer click para expandir)</summary>
+              <pre className="mt-2 overflow-auto">{JSON.stringify(datosUsuario, null, 2)}</pre>
+            </details>
+          </div>
+        )}
+
         {/* Botón de volver */}
         <button
           onClick={handleVolver}
@@ -287,7 +360,7 @@ const MiPerfil: React.FC = () => {
                       className="w-full h-full rounded-full object-cover"
                     />
                   ) : (
-                    datosUsuario.nombreCompleto?.charAt(0) || 'U'
+                    datosUsuario.nombreCompleto?.charAt(0)?.toUpperCase() || 'U'
                   )}
                 </div>
                 
@@ -402,6 +475,7 @@ const MiPerfil: React.FC = () => {
                     value={datosEditados.nombreCompleto || ''}
                     onChange={(e) => handleInputChange('nombreCompleto', e.target.value)}
                     className="w-full px-3 py-2 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-cyan-500 bg-white/70"
+                    placeholder="Ingresa tu nombre completo"
                   />
                 ) : (
                   <p className="text-gray-900 font-medium">{datosUsuario.nombreCompleto || 'No especificado'}</p>
@@ -449,6 +523,7 @@ const MiPerfil: React.FC = () => {
                         value={datosEditados.carrera || ''}
                         onChange={(e) => handleInputChange('carrera', e.target.value)}
                         className="w-full px-3 py-2 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-cyan-500 bg-white/70"
+                        placeholder="Ingresa tu carrera"
                       />
                     ) : (
                       <p className="text-gray-900 font-medium">{datosUsuario.estudiante.carrera || 'No especificado'}</p>
@@ -459,7 +534,7 @@ const MiPerfil: React.FC = () => {
                     <label className="block text-sm font-medium text-gray-700 mb-1">Semestre</label>
                     {modoEdicion ? (
                       <select
-                        value={datosEditados.semestre || ''}
+                        value={datosEditados.semestre || 1}
                         onChange={(e) => handleInputChange('semestre', parseInt(e.target.value))}
                         className="w-full px-3 py-2 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-cyan-500 bg-white/70"
                       >
@@ -501,6 +576,7 @@ const MiPerfil: React.FC = () => {
                         value={datosEditados.departamento || ''}
                         onChange={(e) => handleInputChange('departamento', e.target.value)}
                         className="w-full px-3 py-2 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-cyan-500 bg-white/70"
+                        placeholder="Ingresa tu departamento"
                       />
                     ) : (
                       <p className="text-gray-900 font-medium">{datosUsuario.coordinador.departamento || 'No especificado'}</p>
