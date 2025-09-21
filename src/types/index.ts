@@ -196,6 +196,7 @@ export interface EstadisticasGenerales {
 }
 
 export interface EstudianteResumen {
+  nivelBurnoutActual: ReactNode;
   nivelEstresActual: ReactNode;
   usuario: any;
   id: number;
@@ -214,6 +215,7 @@ export interface EstudianteResumen {
 export interface AlertaCompleta extends Alerta {
   tipo: ReactNode;
   estudiante: {
+    usuario: any;
     id: number;
     nombre: string;
     carrera: string;
