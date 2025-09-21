@@ -162,19 +162,58 @@ function AppRoutes() {
         </ProtectedRoute>
       } />
 
-      {/* Ruta 404 */}
+      {/* Ruta 404 - DISEÑO MEJORADO */}
       <Route path="*" element={
-        <div className="min-h-screen flex items-center justify-center bg-gray-50">
-          <div className="text-center">
-            <h1 className="text-6xl font-bold text-gray-900">404</h1>
-            <p className="text-xl text-gray-600 mt-4">Página no encontrada</p>
+        <div className="min-h-screen bg-gradient-to-br from-sky-200 via-cyan-300 to-white flex items-center justify-center" style={{ fontFamily: "'Inter', 'Segoe UI', sans-serif" }}>
+          {/* Logo en esquina superior izquierda */}
+          <div className="absolute top-6 left-6">
+            <div className="flex items-center space-x-3">
+              <div className="relative">
+                <svg width="40" height="40" viewBox="0 0 48 48">
+                  <defs>
+                    <linearGradient id="logo404Gradient" x1="0%" y1="0%" x2="100%" y2="100%">
+                      <stop offset="0%" stopColor="#0ea5e9" />
+                      <stop offset="50%" stopColor="#06b6d4" />
+                      <stop offset="100%" stopColor="#0891b2" />
+                    </linearGradient>
+                  </defs>
+                  <circle cx="24" cy="24" r="20" fill="url(#logo404Gradient)" rx="20"/>
+                  <circle cx="30" cy="15" r="3" fill="#f97316"/>
+                  <path d="M24 30c-1.3-1.3-7-5-7-10 0-2.5 1.7-4 4.2-4s4.2 1.5 4.2 4c0 0 0-2.5 0-4 0-2.5 1.7-4 4.2-4s4.2 1.5 4.2 4c0 5-5.6 8.7-7 10z" fill="white"/>
+                </svg>
+              </div>
+              <div className="text-gray-800">
+                <h1 className="text-lg font-black tracking-tight">Bienestar</h1>
+                <p className="text-xs font-bold text-gray-600 -mt-1">DACYTI</p>
+              </div>
+            </div>
+          </div>
+
+          {/* Contenido 404 */}
+          <div className="text-center bg-white/80 backdrop-blur-sm rounded-3xl shadow-2xl p-12 border border-white/20">
+            <div className="mb-8">
+              <div className="mx-auto w-24 h-24 bg-gradient-to-br from-red-400 to-pink-500 rounded-3xl flex items-center justify-center mb-6 shadow-xl">
+                <svg className="w-12 h-12 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.5">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L4.082 16.5c-.77.833.192 2.5 1.732 2.5z" />
+                </svg>
+              </div>
+              <h1 className="text-8xl font-black text-gray-800 mb-4">404</h1>
+              <p className="text-2xl text-gray-600 font-bold mb-2">Página no encontrada</p>
+              <p className="text-gray-500 font-medium">La página que buscas no existe o ha sido movida.</p>
+            </div>
+            
             <button 
               onClick={() => window.history.back()}
-              className="mt-6 btn-primary"
+              className="bg-gradient-to-r from-teal-500 to-blue-500 text-white font-bold py-4 px-8 rounded-3xl hover:from-teal-600 hover:to-blue-600 focus:outline-none focus:ring-4 focus:ring-teal-300 transition-all duration-200 shadow-lg hover:shadow-xl transform hover:-translate-y-0.5"
             >
               Volver atrás
             </button>
           </div>
+
+          {/* Elementos decorativos */}
+          <div className="absolute top-10 right-10 w-32 h-32 bg-white/10 rounded-full blur-xl"></div>
+          <div className="absolute bottom-10 left-10 w-40 h-40 bg-cyan-300/20 rounded-full blur-2xl"></div>
+          <div className="absolute top-1/2 right-4 w-24 h-24 bg-blue-400/15 rounded-full blur-lg"></div>
         </div>
       } />
     </Routes>
@@ -186,7 +225,8 @@ function App() {
   return (
     <AuthProvider>
       <Router>
-        <div className="min-h-screen bg-gray-50">
+        {/* FONDO DEGRADADO PRINCIPAL APLICADO */}
+        <div className="min-h-screen bg-gradient-to-br from-sky-200 via-cyan-300 to-white" style={{ fontFamily: "'Inter', 'Segoe UI', sans-serif" }}>
           <AppRoutes />
         </div>
       </Router>
@@ -195,3 +235,4 @@ function App() {
 }
 
 export default App;
+
