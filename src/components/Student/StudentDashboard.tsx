@@ -17,31 +17,50 @@ function StudentDashboard() {
     const fetchDashboardData = async () => {
       try {
         setIsLoading(true);
+        setError(null); // Reset error state
         const response = await apiService.getStudentDashboard();
-        if (response.success) {
-          setDashboardData(response.data);
+        
+        if (response.success && response.data) {
+          // Validar estructura de datos antes de asignar
+          const data = response.data;
+          if (data.estudiante && data.estadisticas && data.evaluacionSemanal) {
+            setDashboardData(data);
+          } else {
+            setError('Datos del dashboard incompletos');
+          }
         } else {
           setError(response.message || 'Error al cargar el dashboard');
         }
       } catch (error: any) {
+        console.error('Error fetching dashboard data:', error);
         setError(error.message || 'Error de conexión');
       } finally {
         setIsLoading(false);
       }
     };
 
-    fetchDashboardData();
-  }, []);
+    // Solo cargar datos si hay usuario autenticado
+    if (usuario) {
+      fetchDashboardData();
+    } else {
+      setIsLoading(false);
+      setError('Usuario no autenticado');
+    }
+  }, [usuario]);
 
   const formatearFecha = (fecha?: string) => {
     if (!fecha) return 'Nunca';
-    return new Date(fecha).toLocaleDateString('es-ES', {
-      year: 'numeric',
-      month: 'long',
-      day: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit'
-    });
+    try {
+      return new Date(fecha).toLocaleDateString('es-ES', {
+        year: 'numeric',
+        month: 'long',
+        day: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit'
+      });
+    } catch {
+      return 'Fecha inválida';
+    }
   };
 
   const getRiskColor = (nivel: string) => {
@@ -78,7 +97,59 @@ function StudentDashboard() {
     );
   }
 
-  const { estudiante, evaluacionSemanal, estadisticas, evaluacionesRecientes, alertasActivas } = dashboardData!;
+  // Validar que dashboardData existe y tiene la estructura correcta
+  if (!dashboardData || !dashboardData.estudiante) {
+    return (
+      <div>
+        <Navigation />
+        <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+          <div className="text-center">
+            <div className="text-yellow-600 text-6xl mb-4">⚠️</div>
+            <h2 className="text-2xl font-bold text-gray-900 mb-2">Datos no disponibles</h2>
+            <p className="text-gray-600 mb-4">No se pudieron cargar los datos del estudiante</p>
+            <button 
+              onClick={() => window.location.reload()}
+              className="btn-primary"
+            >
+              Reintentar
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // Desestructurar con valores por defecto para evitar errores
+  const {
+    estudiante,
+    evaluacionSemanal = { puedeEvaluar: false, razon: 'No disponible' },
+    estadisticas = { totalEvaluaciones: 0, promedioEstres: 0, promedioBurnout: 0, tendencia: 'estable' },
+    evaluacionesRecientes = [],
+    alertasActivas = []
+  } = dashboardData;
+
+  // Validar que estudiante tiene la estructura correcta
+  if (!estudiante.estadoActual) {
+    return (
+      <div>
+        <Navigation />
+        <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+          <div className="text-center">
+            <div className="text-yellow-600 text-6xl mb-4">⚠️</div>
+            <h2 className="text-2xl font-bold text-gray-900 mb-2">Perfil incompleto</h2>
+            <p className="text-gray-600 mb-4">Faltan datos del estado actual del estudiante</p>
+            <button 
+              onClick={() => window.location.reload()}
+              className="btn-primary"
+            >
+              Reintentar
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   const riskColors = getRiskColor(estudiante.estadoActual.estadoRiesgo);
 
   return (
@@ -90,15 +161,15 @@ function StudentDashboard() {
           {/* Encabezado de bienvenida */}
           <div className="mb-8">
             <h1 className="text-3xl font-bold text-gray-900">
-              ¡Hola, {estudiante.nombreCompleto}! 👋
+              ¡Hola, {estudiante.nombreCompleto || 'Estudiante'}! 👋
             </h1>
             <p className="mt-2 text-gray-600">
-              {estudiante.carrera} - {estudiante.semestre}° Semestre
+              {estudiante.carrera || 'Carrera'} - {estudiante.semestre || 'N'}° Semestre
             </p>
           </div>
 
           {/* Alertas activas */}
-          {alertasActivas.length > 0 && (
+          {alertasActivas && alertasActivas.length > 0 && (
             <div className="mb-6">
               <div className="bg-yellow-50 border-l-4 border-yellow-400 p-4 rounded-lg">
                 <div className="flex">
@@ -113,8 +184,8 @@ function StudentDashboard() {
                     </h3>
                     <div className="mt-2 text-sm text-yellow-700">
                       {alertasActivas.slice(0, 2).map((alerta, index) => (
-                        <div key={alerta.id} className="mb-1">
-                          - {alerta.mensaje}
+                        <div key={alerta.id || index} className="mb-1">
+                          - {alerta.mensaje || 'Alerta sin mensaje'}
                         </div>
                       ))}
                     </div>
@@ -143,14 +214,14 @@ function StudentDashboard() {
                     </div>
                     <h3 className="font-medium text-gray-900">Estado General</h3>
                     <p className={`text-sm font-semibold ${riskColors.text}`}>
-                      Riesgo {estudiante.estadoActual.estadoRiesgo}
+                      Riesgo {estudiante.estadoActual.estadoRiesgo || 'DESCONOCIDO'}
                     </p>
                   </div>
 
                   <div className="text-center">
                     <div className="mx-auto w-16 h-16 rounded-full flex items-center justify-center bg-red-100 border-2 border-red-200 mb-3">
                       <span className="text-xl font-bold text-red-800">
-                        {estudiante.estadoActual.nivelEstres}/10
+                        {estudiante.estadoActual.nivelEstres || 0}/10
                       </span>
                     </div>
                     <h3 className="font-medium text-gray-900">Nivel de Estrés</h3>
@@ -160,7 +231,7 @@ function StudentDashboard() {
                   <div className="text-center">
                     <div className="mx-auto w-16 h-16 rounded-full flex items-center justify-center bg-orange-100 border-2 border-orange-200 mb-3">
                       <span className="text-xl font-bold text-orange-800">
-                        {estudiante.estadoActual.nivelBurnout}/10
+                        {estudiante.estadoActual.nivelBurnout || 0}/10
                       </span>
                     </div>
                     <h3 className="font-medium text-gray-900">Nivel de Burnout</h3>
@@ -213,7 +284,7 @@ function StudentDashboard() {
                   <h2 className="text-xl font-semibold text-gray-900">Evaluaciones Recientes</h2>
                 </div>
                 
-                {evaluacionesRecientes.length > 0 ? (
+                {evaluacionesRecientes && evaluacionesRecientes.length > 0 ? (
                   <div className="space-y-3">
                     {evaluacionesRecientes.slice(0, 3).map((evaluacion) => (
                       <div key={evaluacion.id} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
@@ -222,7 +293,7 @@ function StudentDashboard() {
                             {formatearFecha(evaluacion.fechaEvaluacion)}
                           </p>
                           <p className="text-sm text-gray-600">
-                            Estrés: {evaluacion.puntajeEstres}/10 • Burnout: {evaluacion.puntajeBurnout}/10
+                            Estrés: {evaluacion.puntajeEstres || 0}/10 • Burnout: {evaluacion.puntajeBurnout || 0}/10
                           </p>
                         </div>
                         <div className={`px-2 py-1 rounded-full text-xs font-medium ${getRiskColor(evaluacion.nivelRiesgo).bg} ${getRiskColor(evaluacion.nivelRiesgo).text}`}>

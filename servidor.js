@@ -67,8 +67,8 @@ const authenticateToken = async (req, res, next) => {
       nombreCompleto: usuario.nombreCompleto,
       correo: usuario.correo,
       tipoUsuario: usuario.tipoUsuario,
-      estudiante: usuario.estudiante,
-      coordinador: usuario.coordinador
+      estudiante: usuario.estudiante[0] || null, // Arreglar array
+      coordinador: usuario.coordinador[0] || null // Arreglar array
     };
 
     next();
@@ -241,10 +241,10 @@ app.post('/api/auth/login', async (req, res) => {
       tipoUsuario: usuario.tipoUsuario
     };
 
-    if (usuario.tipoUsuario === 'ESTUDIANTE' && usuario.estudiante) {
-      datosRespuesta.estudiante = usuario.estudiante;
-    } else if (usuario.tipoUsuario === 'COORDINADOR' && usuario.coordinador) {
-      datosRespuesta.coordinador = usuario.coordinador;
+    if (usuario.tipoUsuario === 'ESTUDIANTE' && usuario.estudiante[0]) {
+      datosRespuesta.estudiante = usuario.estudiante[0];
+    } else if (usuario.tipoUsuario === 'COORDINADOR' && usuario.coordinador[0]) {
+      datosRespuesta.coordinador = usuario.coordinador[0];
     }
 
     res.status(200).json({
@@ -265,9 +265,143 @@ app.post('/api/auth/login', async (req, res) => {
   }
 });
 
+// ===== RUTA FALTANTE - MUY IMPORTANTE =====
+// GET /api/auth/profile - Obtener perfil del usuario autenticado
+app.get('/api/auth/profile', authenticateToken, async (req, res) => {
+  try {
+    const usuario = await prisma.usuario.findUnique({
+      where: { id: req.user.id },
+      include: {
+        estudiante: {
+          include: {
+            evaluaciones: {
+              orderBy: { fechaEvaluacion: 'desc' },
+              take: 5
+            },
+            alertas: {
+              where: { estaLeida: false },
+              orderBy: { fechaCreacion: 'desc' }
+            }
+          }
+        },
+        coordinador: true
+      }
+    });
+
+    if (!usuario) {
+      return res.status(404).json({
+        success: false,
+        message: 'Usuario no encontrado'
+      });
+    }
+
+    // Preparar datos de respuesta
+    const datosRespuesta = {
+      id: usuario.id,
+      nombreCompleto: usuario.nombreCompleto,
+      correo: usuario.correo,
+      tipoUsuario: usuario.tipoUsuario,
+      fechaCreacion: usuario.fechaCreacion
+    };
+
+    if (usuario.tipoUsuario === 'ESTUDIANTE' && usuario.estudiante[0]) {
+      datosRespuesta.estudiante = {
+        id: usuario.estudiante[0].id,
+        carrera: usuario.estudiante[0].carrera,
+        semestre: usuario.estudiante[0].semestre,
+        nivelEstresActual: usuario.estudiante[0].nivelEstresActual,
+        nivelBurnoutActual: usuario.estudiante[0].nivelBurnoutActual,
+        estadoRiesgo: usuario.estudiante[0].estadoRiesgo,
+        fechaUltimaEvaluacion: usuario.estudiante[0].fechaUltimaEvaluacion,
+        evaluacionesRecientes: usuario.estudiante[0].evaluaciones,
+        alertasNoLeidas: usuario.estudiante[0].alertas
+      };
+    } else if (usuario.tipoUsuario === 'COORDINADOR' && usuario.coordinador[0]) {
+      datosRespuesta.coordinador = {
+        id: usuario.coordinador[0].id,
+        departamento: usuario.coordinador[0].departamento
+      };
+    }
+
+    res.status(200).json({
+      success: true,
+      data: { usuario: datosRespuesta }
+    });
+
+  } catch (error) {
+    console.error('Error obteniendo perfil:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Error interno del servidor'
+    });
+  }
+});
+
+// PUT /api/auth/profile - Actualizar perfil
+app.put('/api/auth/profile', authenticateToken, async (req, res) => {
+  try {
+    const { nombreCompleto, carrera, semestre, departamento } = req.body;
+    const userId = req.user.id;
+
+    // Actualizar datos base del usuario
+    const datosActualizacion = {};
+    if (nombreCompleto) {
+      datosActualizacion.nombreCompleto = nombreCompleto;
+    }
+
+    if (Object.keys(datosActualizacion).length > 0) {
+      await prisma.usuario.update({
+        where: { id: userId },
+        data: datosActualizacion
+      });
+    }
+
+    // Actualizar datos específicos según tipo de usuario
+    if (req.user.tipoUsuario === 'ESTUDIANTE' && req.user.estudiante) {
+      const datosEstudiante = {};
+      if (carrera) datosEstudiante.carrera = carrera;
+      if (semestre) datosEstudiante.semestre = parseInt(semestre);
+
+      if (Object.keys(datosEstudiante).length > 0) {
+        await prisma.estudiante.update({
+          where: { id: req.user.estudiante.id },
+          data: datosEstudiante
+        });
+      }
+    } else if (req.user.tipoUsuario === 'COORDINADOR' && req.user.coordinador) {
+      if (departamento) {
+        await prisma.coordinador.update({
+          where: { id: req.user.coordinador.id },
+          data: { departamento }
+        });
+      }
+    }
+
+    res.status(200).json({
+      success: true,
+      message: 'Perfil actualizado exitosamente'
+    });
+
+  } catch (error) {
+    console.error('Error actualizando perfil:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Error interno del servidor'
+    });
+  }
+});
+
+// POST /api/auth/logout
+app.post('/api/auth/logout', authenticateToken, (req, res) => {
+  res.status(200).json({
+    success: true,
+    message: 'Sesión cerrada exitosamente'
+  });
+});
+
 // ===== RUTAS PARA ESTUDIANTES =====
 
-// GET /api/students/dashboard - StudentDashboard.tsx 
+// GET /api/students/dashboard - CORREGIDO
 app.get('/api/students/dashboard', authenticateToken, async (req, res) => {
   try {
     if (req.user.tipoUsuario !== 'ESTUDIANTE') {
@@ -277,9 +411,19 @@ app.get('/api/students/dashboard', authenticateToken, async (req, res) => {
       });
     }
 
-    const estudianteId = req.user.estudiante.id;
+    console.log('🔍 Usuario autenticado:', req.user.id, req.user.nombreCompleto);
+    console.log('🎓 Estudiante ID:', req.user.estudiante?.id);
 
-    // Obtener información del estudiante
+    const estudianteId = req.user.estudiante?.id;
+
+    if (!estudianteId) {
+      return res.status(404).json({
+        success: false,
+        message: 'Perfil de estudiante no encontrado'
+      });
+    }
+
+    // Obtener información del estudiante específico
     const estudiante = await prisma.estudiante.findUnique({
       where: { id: estudianteId },
       include: {
@@ -308,7 +452,9 @@ app.get('/api/students/dashboard', authenticateToken, async (req, res) => {
       });
     }
 
-    // Calcular estadísticas
+    console.log('✅ Estudiante encontrado:', estudiante.usuario.nombreCompleto);
+
+    // Calcular estadísticas para ESTE estudiante específico
     const totalEvaluaciones = await prisma.evaluacion.count({
       where: { estudianteId }
     });
@@ -388,13 +534,15 @@ app.get('/api/students/dashboard', authenticateToken, async (req, res) => {
       progresoSemanal: []
     };
 
+    console.log('📊 Dashboard data preparado para:', estudiante.usuario.nombreCompleto);
+
     res.status(200).json({
       success: true,
       data: dashboardData
     });
 
   } catch (error) {
-    console.error('Error obteniendo dashboard del estudiante:', error);
+    console.error('❌ Error obteniendo dashboard del estudiante:', error);
     res.status(500).json({
       success: false,
       message: 'Error interno del servidor'
@@ -402,13 +550,14 @@ app.get('/api/students/dashboard', authenticateToken, async (req, res) => {
   }
 });
 
+// Resto de rutas de estudiantes (sin cambios)...
 app.get('/api/students/evaluation/questions', authenticateToken, async (req, res) => {
   try {
     const preguntas = await prisma.preguntaEvaluacion.findMany({
       where: { activa: true },
       orderBy: [
         { categoria: 'asc' },
-        { orden: 'asc' }  // Ahora sí podemos ordenar por 'orden'
+        { orden: 'asc' }
       ],
       select: {
         id: true,
@@ -421,7 +570,6 @@ app.get('/api/students/evaluation/questions', authenticateToken, async (req, res
 
     console.log(`📊 Preguntas encontradas: ${preguntas.length}`);
 
-    // Separar por categoría y formatear
     const preguntasEstres = preguntas
       .filter(p => p.categoria === 'ESTRES')
       .map((p, index) => ({
@@ -489,7 +637,7 @@ app.get('/api/students/evaluation/questions', authenticateToken, async (req, res
   }
 });
 
-// POST /api/students/evaluation/submit - WeeklyEvaluation.tsx (CORREGIDO)
+// POST /api/students/evaluation/submit - CORREGIDO
 app.post('/api/students/evaluation/submit', authenticateToken, async (req, res) => {
   try {
     if (req.user.tipoUsuario !== 'ESTUDIANTE') {
@@ -499,11 +647,18 @@ app.post('/api/students/evaluation/submit', authenticateToken, async (req, res) 
       });
     }
 
-    console.log('📝 Procesando evaluación...');
+    console.log('📝 Procesando evaluación para usuario:', req.user.nombreCompleto);
     console.log('Datos recibidos:', req.body);
 
     const { respuestasEstres, respuestasBurnout, tiempoRespuesta } = req.body;
-    const estudianteId = req.user.estudiante.id;
+    const estudianteId = req.user.estudiante?.id;
+
+    if (!estudianteId) {
+      return res.status(404).json({
+        success: false,
+        message: 'Perfil de estudiante no encontrado'
+      });
+    }
 
     // Validar respuestas
     if (!respuestasEstres || !respuestasBurnout || !Array.isArray(respuestasEstres) || !Array.isArray(respuestasBurnout)) {
@@ -513,7 +668,7 @@ app.post('/api/students/evaluation/submit', authenticateToken, async (req, res) 
       });
     }
 
-    // Verificar límite semanal
+    // Verificar límite semanal para ESTE estudiante específico
     const hoy = new Date();
     const inicioSemana = new Date(hoy);
     inicioSemana.setDate(hoy.getDate() - hoy.getDay());
@@ -521,7 +676,7 @@ app.post('/api/students/evaluation/submit', authenticateToken, async (req, res) 
 
     const evaluacionesSemana = await prisma.evaluacion.count({
       where: {
-        estudianteId,
+        estudianteId, // Filtrar por este estudiante específico
         fechaEvaluacion: { gte: inicioSemana }
       }
     });
@@ -546,12 +701,12 @@ app.post('/api/students/evaluation/submit', authenticateToken, async (req, res) 
       nivelRiesgo = 'MEDIO';
     }
 
-    console.log(`📊 Puntajes calculados: E:${puntajeEstres}, B:${puntajeBurnout}, T:${puntajeTotal}, R:${nivelRiesgo}`);
+    console.log(`📊 Puntajes calculados para ${req.user.nombreCompleto}: E:${puntajeEstres}, B:${puntajeBurnout}, T:${puntajeTotal}, R:${nivelRiesgo}`);
 
-    // Guardar evaluación
+    // Guardar evaluación para ESTE estudiante específico
     const evaluacion = await prisma.evaluacion.create({
       data: {
-        estudianteId,
+        estudianteId, // Guardar para este estudiante específico
         puntajeEstres,
         puntajeBurnout,
         puntajeTotal,
@@ -564,7 +719,7 @@ app.post('/api/students/evaluation/submit', authenticateToken, async (req, res) 
       }
     });
 
-    // Actualizar estado del estudiante
+    // Actualizar estado del estudiante específico
     await prisma.estudiante.update({
       where: { id: estudianteId },
       data: {
@@ -575,12 +730,12 @@ app.post('/api/students/evaluation/submit', authenticateToken, async (req, res) 
       }
     });
 
-    // Generar alerta si es riesgo alto
+    // Generar alerta si es riesgo alto para ESTE estudiante
     let alertaGenerada = false;
     if (nivelRiesgo === 'ALTO') {
       await prisma.alerta.create({
         data: {
-          estudianteId,
+          estudianteId, // Alerta para este estudiante específico
           tipoAlerta: puntajeEstres >= puntajeBurnout ? 'Estrés Alto' : 'Burnout Alto',
           severidad: 'ALTO',
           mensaje: `${req.user.nombreCompleto} presenta niveles altos de ${puntajeEstres >= puntajeBurnout ? 'estrés' : 'burnout'} (${Math.max(puntajeEstres, puntajeBurnout)}/10)`
@@ -590,7 +745,7 @@ app.post('/api/students/evaluation/submit', authenticateToken, async (req, res) 
       alertaGenerada = true;
     }
 
-    console.log('✅ Evaluación procesada exitosamente');
+    console.log(`✅ Evaluación procesada exitosamente para ${req.user.nombreCompleto}`);
 
     res.status(201).json({
       success: true,
@@ -628,6 +783,7 @@ app.post('/api/students/evaluation/submit', authenticateToken, async (req, res) 
   }
 });
 
+// Resto de rutas igual que antes...
 // GET /api/students/evaluation/history
 app.get('/api/students/evaluation/history', authenticateToken, async (req, res) => {
   try {
@@ -639,17 +795,24 @@ app.get('/api/students/evaluation/history', authenticateToken, async (req, res) 
     }
 
     const { pagina = 1, limite = 10 } = req.query;
-    const estudianteId = req.user.estudiante.id;
+    const estudianteId = req.user.estudiante?.id;
+
+    if (!estudianteId) {
+      return res.status(404).json({
+        success: false,
+        message: 'Perfil de estudiante no encontrado'
+      });
+    }
 
     const evaluaciones = await prisma.evaluacion.findMany({
-      where: { estudianteId },
+      where: { estudianteId }, // Solo las evaluaciones de ESTE estudiante
       orderBy: { fechaEvaluacion: 'desc' },
       take: parseInt(limite),
       skip: (parseInt(pagina) - 1) * parseInt(limite)
     });
 
     const total = await prisma.evaluacion.count({
-      where: { estudianteId }
+      where: { estudianteId } // Solo contar las de ESTE estudiante
     });
 
     res.status(200).json({
@@ -800,6 +963,7 @@ app.get('/api/coordinators/dashboard', authenticateToken, async (req, res) => {
   }
 });
 
+// Resto de rutas igual que antes...
 // GET /api/coordinators/students
 app.get('/api/coordinators/students', authenticateToken, async (req, res) => {
   try {
