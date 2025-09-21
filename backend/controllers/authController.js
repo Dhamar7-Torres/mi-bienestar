@@ -327,60 +327,70 @@ class AuthController {
 
   // Cambiar contraseña
   static async changePassword(req, res) {
-    try {
-      const { contrasenaActual, contrasenaNueva } = req.body;
+  try {
+    const { contrasenaActual, contrasenaNueva } = req.body;
 
-      if (!contrasenaActual || !contrasenaNueva) {
-        return res.status(400).json({
-          success: false,
-          message: 'Contraseña actual y nueva son requeridas'
-        });
-      }
-
-      if (contrasenaNueva.length < 6) {
-        return res.status(400).json({
-          success: false,
-          message: 'La nueva contraseña debe tener al menos 6 caracteres'
-        });
-      }
-
-      // Obtener usuario actual
-      const usuario = await prisma.usuario.findUnique({
-        where: { id: req.user.id }
-      });
-
-      // Verificar contraseña actual
-      const contrasenaValida = await comparePassword(contrasenaActual, usuario.contrasenaHash);
-
-      if (!contrasenaValida) {
-        return res.status(400).json({
-          success: false,
-          message: 'La contraseña actual es incorrecta'
-        });
-      }
-
-      // Hash nueva contraseña
-      const nuevaContrasenaHash = await hashPassword(contrasenaNueva);
-
-      // Actualizar contraseña
-      await prisma.usuario.update({
-        where: { id: req.user.id },
-        data: { contrasenaHash: nuevaContrasenaHash }
-      });
-
-      res.status(200).json({
-        success: true,
-        message: 'Contraseña cambiada exitosamente'
-      });
-
-    } catch (error) {
-      console.error('Error cambiando contraseña:', error);
-      res.status(500).json({
+    if (!contrasenaActual || !contrasenaNueva) {
+      return res.status(400).json({
         success: false,
-        message: 'Error interno del servidor'
+        message: 'Contraseña actual y nueva son requeridas'
       });
     }
+
+    if (contrasenaNueva.length < 6) {
+      return res.status(400).json({
+        success: false,
+        message: 'La nueva contraseña debe tener al menos 6 caracteres'
+      });
+    }
+
+    // Obtener usuario actual
+    const usuario = await prisma.usuario.findUnique({
+      where: { id: req.user.id }
+    });
+
+    if (!usuario) {
+      return res.status(404).json({
+        success: false,
+        message: 'Usuario no encontrado'
+      });
+    }
+
+    // Verificar contraseña actual
+    const contrasenaValida = await comparePassword(contrasenaActual, usuario.contrasenaHash);
+
+    if (!contrasenaValida) {
+      return res.status(400).json({
+        success: false,
+        message: 'La contraseña actual es incorrecta'
+      });
+    }
+
+    // Hash nueva contraseña
+    const nuevaContrasenaHash = await hashPassword(contrasenaNueva);
+
+    // Actualizar contraseña
+    await prisma.usuario.update({
+      where: { id: req.user.id },
+      data: { 
+        contrasenaHash: nuevaContrasenaHash,
+        fechaActualizacion: new Date()
+      }
+    });
+
+    res.status(200).json({
+      success: true,
+      message: 'Contraseña cambiada exitosamente'
+    });
+
+  } catch (error) {
+    console.error('Error cambiando contraseña:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Error interno del servidor'
+    });
   }
+}
 
   // Cerrar sesión (logout)
   static async logout(req, res) {

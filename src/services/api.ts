@@ -90,10 +90,23 @@ class ApiService {
     return response.data;
   }
 
-  async changePassword(passwordData: any) {
-    const response = await this.api.post('/auth/change-password', passwordData);
-    return response.data;
-  }
+// Método mejorado para cambiar contraseña
+async changePassword(passwordData: { contrasenaActual: string; contrasenaNueva: string; }) {
+  const response = await this.api.post('/auth/change-password', passwordData);
+  return response.data;
+}
+
+// Nuevo método para generar reporte PDF
+async generatePDFReport(reportData = {}) {
+  const response = await this.api.post('/coordinators/reports/pdf', reportData);
+  return response.data;
+}
+
+// Nuevo método para exportar estudiantes como PDF
+async exportStudentsPDF(params = {}) {
+  const response = await this.api.get('/coordinators/export/students-pdf', { params });
+  return response.data;
+}
 
   async logout() {
     const response = await this.api.post('/auth/logout');

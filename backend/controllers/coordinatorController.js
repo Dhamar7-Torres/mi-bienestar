@@ -178,6 +178,241 @@ class CoordinatorController {
   }
 
   /**
+ * Generar reporte PDF para coordinadores
+ */
+static async generatePDFReport(req, res) {
+  try {
+    const { 
+      fechaInicio = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000),
+      fechaFin = new Date(),
+      incluirDetalles = true,
+      tipoReporte = 'completo' // 'completo', 'estadisticas', 'estudiantes'
+    } = req.body;
+
+    // Obtener estadísticas generales
+    const estadisticasGenerales = await this.getGeneralStats();
+    
+    // Obtener lista de estudiantes
+    const estudiantes = await prisma.estudiante.findMany({
+      include: {
+        usuario: {
+          select: {
+            nombreCompleto: true,
+            correo: true
+          }
+        },
+        evaluaciones: {
+          orderBy: { fechaEvaluacion: 'desc' },
+          take: 1
+        }
+      },
+      orderBy: {
+        estadoRiesgo: 'desc' // Primero los de riesgo alto
+      }
+    });
+
+    // Obtener alertas recientes
+    const alertas = await prisma.alerta.findMany({
+      where: {
+        fechaCreacion: {
+          gte: new Date(fechaInicio),
+          lte: new Date(fechaFin)
+        }
+      },
+      include: {
+        estudiante: {
+          include: {
+            usuario: {
+              select: { nombreCompleto: true }
+            }
+          }
+        }
+      },
+      orderBy: { fechaCreacion: 'desc' }
+    });
+
+    // Crear contenido del reporte
+    const reporteData = {
+      metadatos: {
+        titulo: 'Reporte de Bienestar Estudiantil',
+        fechaGeneracion: new Date().toISOString(),
+        generadoPor: req.user.nombreCompleto,
+        periodo: {
+          inicio: fechaInicio,
+          fin: fechaFin
+        },
+        tipoReporte
+      },
+      estadisticasGenerales,
+      estudiantes: estudiantes.map(est => ({
+        id: est.id,
+        nombre: est.usuario.nombreCompleto,
+        correo: est.usuario.correo,
+        carrera: est.carrera,
+        semestre: est.semestre,
+        estadoRiesgo: est.estadoRiesgo,
+        nivelEstres: est.nivelEstresActual,
+        nivelBurnout: est.nivelBurnoutActual,
+        ultimaEvaluacion: est.evaluaciones[0]?.fechaEvaluacion || null
+      })),
+      alertas: alertas.map(alerta => ({
+        fecha: alerta.fechaCreacion,
+        estudiante: alerta.estudiante.usuario.nombreCompleto,
+        tipo: alerta.tipoAlerta,
+        severidad: alerta.severidad,
+        mensaje: alerta.mensaje
+      })),
+      resumen: {
+        totalEstudiantes: estudiantes.length,
+        estudiantesRiesgoAlto: estudiantes.filter(e => e.estadoRiesgo === 'ALTO').length,
+        estudiantesRiesgoMedio: estudiantes.filter(e => e.estadoRiesgo === 'MEDIO').length,
+        estudiantesRiesgoBajo: estudiantes.filter(e => e.estadoRiesgo === 'BAJO').length,
+        totalAlertas: alertas.length,
+        alertasAltas: alertas.filter(a => a.severidad === 'ALTO').length
+      }
+    };
+
+    res.status(200).json({
+      success: true,
+      message: 'Reporte generado exitosamente',
+      data: reporteData
+    });
+
+  } catch (error) {
+    console.error('Error generando reporte PDF:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Error interno del servidor'
+    });
+  }
+}
+
+/**
+ * Exportar lista de estudiantes como PDF
+ */
+static async exportStudentsPDF(req, res) {
+  try {
+    const { 
+      filtroRiesgo, 
+      filtroCarrera,
+      busqueda,
+      incluirDetalles = true 
+    } = req.query;
+
+    // Construir filtros
+    const filtros = {};
+    
+    if (filtroRiesgo) {
+      filtros.estadoRiesgo = filtroRiesgo;
+    }
+    
+    if (filtroCarrera) {
+      filtros.carrera = {
+        contains: filtroCarrera,
+        mode: 'insensitive'
+      };
+    }
+
+    let filtroUsuario = {};
+    if (busqueda) {
+      filtroUsuario = {
+        nombreCompleto: {
+          contains: busqueda,
+          mode: 'insensitive'
+        }
+      };
+    }
+
+    // Obtener estudiantes
+    const estudiantes = await prisma.estudiante.findMany({
+      where: {
+        ...filtros,
+        usuario: filtroUsuario
+      },
+      include: {
+        usuario: {
+          select: {
+            nombreCompleto: true,
+            correo: true,
+            fechaCreacion: true
+          }
+        },
+        evaluaciones: {
+          orderBy: { fechaEvaluacion: 'desc' },
+          take: incluirDetalles ? 5 : 1,
+          select: {
+            fechaEvaluacion: true,
+            puntajeEstres: true,
+            puntajeBurnout: true,
+            nivelRiesgo: true
+          }
+        },
+        alertas: incluirDetalles ? {
+          where: { estaLeida: false },
+          select: {
+            tipoAlerta: true,
+            severidad: true,
+            fechaCreacion: true
+          }
+        } : undefined
+      },
+      orderBy: [
+        { estadoRiesgo: 'desc' },
+        { usuario: { nombreCompleto: 'asc' } }
+      ]
+    });
+
+    // Preparar datos para el PDF
+    const estudiantesPDF = estudiantes.map(est => ({
+      nombre: est.usuario.nombreCompleto,
+      correo: est.usuario.correo,
+      carrera: est.carrera,
+      semestre: est.semestre,
+      estadoRiesgo: est.estadoRiesgo,
+      nivelEstres: est.nivelEstresActual || 0,
+      nivelBurnout: est.nivelBurnoutActual || 0,
+      ultimaEvaluacion: est.evaluaciones[0]?.fechaEvaluacion || null,
+      totalEvaluaciones: est.evaluaciones.length,
+      alertasActivas: incluirDetalles ? est.alertas?.length || 0 : 0,
+      fechaRegistro: est.usuario.fechaCreacion
+    }));
+
+    const reportData = {
+      titulo: 'Lista de Estudiantes - Sistema de Bienestar',
+      fechaGeneracion: new Date().toISOString(),
+      generadoPor: req.user.nombreCompleto,
+      filtros: {
+        riesgo: filtroRiesgo || 'Todos',
+        carrera: filtroCarrera || 'Todas',
+        busqueda: busqueda || 'Sin filtro'
+      },
+      total: estudiantesPDF.length,
+      estudiantes: estudiantesPDF,
+      resumen: {
+        riesgoAlto: estudiantesPDF.filter(e => e.estadoRiesgo === 'ALTO').length,
+        riesgoMedio: estudiantesPDF.filter(e => e.estadoRiesgo === 'MEDIO').length,
+        riesgoBajo: estudiantesPDF.filter(e => e.estadoRiesgo === 'BAJO').length,
+        promedioEstres: estudiantesPDF.reduce((sum, e) => sum + e.nivelEstres, 0) / estudiantesPDF.length,
+        promedioBurnout: estudiantesPDF.reduce((sum, e) => sum + e.nivelBurnout, 0) / estudiantesPDF.length
+      }
+    };
+
+    res.status(200).json({
+      success: true,
+      message: 'Lista de estudiantes exportada exitosamente',
+      data: reportData
+    });
+
+  } catch (error) {
+    console.error('Error exportando estudiantes:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Error interno del servidor'
+    });
+  }
+}
+
+  /**
    * Obtener detalles de un estudiante específico
    */
   static async getStudentDetails(req, res) {

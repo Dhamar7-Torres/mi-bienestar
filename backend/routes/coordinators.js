@@ -61,6 +61,23 @@ router.post('/reports/advanced',
   }
 );
 
+// POST /api/coordinators/reports/pdf - Generar reporte PDF
+router.post('/reports/pdf',
+  logActivity('generar_reporte_pdf'),
+  (req, res) => {
+    CoordinatorController.generatePDFReport(req, res);
+  }
+);
+
+// GET /api/coordinators/export/students-pdf - Exportar estudiantes como PDF
+router.get('/export/students-pdf',
+  validateStudentFilters,
+  logActivity('exportar_estudiantes_pdf'),
+  (req, res) => {
+    CoordinatorController.exportStudentsPDF(req, res);
+  }
+);
+
 // GET /api/coordinators/stats/overview - Estadísticas generales
 router.get('/stats/overview',
   logActivity('ver_estadisticas_generales'),
