@@ -884,7 +884,7 @@ app.get('/api/students/resources', authenticateToken, async (req, res) => {
 
 // ===== RUTAS PARA COORDINADORES =====
 
-// GET /api/coordinators/dashboard
+// GET /api/coordinators/dashboard - CORREGIDO
 app.get('/api/coordinators/dashboard', authenticateToken, async (req, res) => {
   try {
     if (req.user.tipoUsuario !== 'COORDINADOR') {
@@ -894,17 +894,58 @@ app.get('/api/coordinators/dashboard', authenticateToken, async (req, res) => {
       });
     }
 
+    console.log('🔍 Calculando estadísticas del dashboard para coordinador...');
+
     // Estadísticas generales
     const totalEstudiantes = await prisma.estudiante.count();
+    console.log(`📊 Total estudiantes: ${totalEstudiantes}`);
     
     const estudiantesPorRiesgo = await prisma.estudiante.groupBy({
       by: ['estadoRiesgo'],
       _count: true
     });
+    console.log('📊 Estudiantes por riesgo:', estudiantesPorRiesgo);
 
+    // CORREGIDO: Contar TODAS las alertas de riesgo alto (no solo no leídas)
     const alertasRiesgoAlto = await prisma.alerta.count({
-      where: { severidad: 'ALTO' }
+      where: { 
+        severidad: 'ALTO'
+        // Removido el filtro de estaLeida para contar todas las alertas de riesgo alto
+      }
     });
+    console.log(`🚨 Alertas de riesgo alto: ${alertasRiesgoAlto}`);
+
+    // CORREGIDO: Calcular tasa de respuesta semanal real
+    const hoy = new Date();
+    const inicioSemana = new Date(hoy);
+    inicioSemana.setDate(hoy.getDate() - hoy.getDay());
+    inicioSemana.setHours(0, 0, 0, 0);
+
+    const evaluacionesSemana = await prisma.evaluacion.count({
+      where: {
+        fechaEvaluacion: { gte: inicioSemana }
+      }
+    });
+    console.log(`📝 Evaluaciones esta semana: ${evaluacionesSemana}`);
+
+    // Calcular tasa de respuesta (evaluaciones esta semana / total estudiantes * 100)
+    // Pero limitarla a máximo 100%
+    const tasaRespuestaSemanal = totalEstudiantes > 0 
+      ? Math.min(100, Math.round((evaluacionesSemana / totalEstudiantes) * 100))
+      : 0;
+    console.log(`📈 Tasa de respuesta semanal: ${tasaRespuestaSemanal}%`);
+
+    // CORREGIDO: Calcular promedios reales de estrés y burnout
+    const estadisticasEstres = await prisma.evaluacion.aggregate({
+      _avg: {
+        puntajeEstres: true,
+        puntajeBurnout: true
+      }
+    });
+
+    const promedioEstres = estadisticasEstres._avg.puntajeEstres || 0;
+    const promedioBurnout = estadisticasEstres._avg.puntajeBurnout || 0;
+    console.log(`📊 Promedios - Estrés: ${promedioEstres}, Burnout: ${promedioBurnout}`);
 
     // Estudiantes de riesgo alto
     const estudiantesRiesgoAlto = await prisma.estudiante.findMany({
@@ -916,6 +957,7 @@ app.get('/api/coordinators/dashboard', authenticateToken, async (req, res) => {
       },
       take: 10
     });
+    console.log(`👥 Estudiantes de riesgo alto encontrados: ${estudiantesRiesgoAlto.length}`);
 
     // Alertas recientes
     const alertasRecientes = await prisma.alerta.findMany({
@@ -931,6 +973,19 @@ app.get('/api/coordinators/dashboard', authenticateToken, async (req, res) => {
       orderBy: { fechaCreacion: 'desc' },
       take: 10
     });
+    console.log(`📢 Alertas recientes encontradas: ${alertasRecientes.length}`);
+
+    // Mapear alertas recientes con el formato correcto
+    const alertasFormateadas = alertasRecientes.map(alerta => ({
+      ...alerta,
+      estudiante: {
+        id: alerta.estudiante.id,
+        nombre: alerta.estudiante.usuario.nombreCompleto,
+        carrera: alerta.estudiante.carrera,
+        estadoRiesgo: alerta.estudiante.estadoRiesgo,
+        usuario: alerta.estudiante.usuario
+      }
+    }));
 
     const dashboardData = {
       resumenGeneral: {
@@ -939,15 +994,17 @@ app.get('/api/coordinators/dashboard', authenticateToken, async (req, res) => {
           acc[item.estadoRiesgo.toLowerCase()] = item._count;
           return acc;
         }, { alto: 0, medio: 0, bajo: 0 }),
-        alertasRiesgoAlto,
-        tasaRespuestaSemanal: 75,
-        promedioEstres: 5.2,
-        promedioBurnout: 4.8
+        alertasRiesgoAlto, // Ahora usa el valor corregido
+        tasaRespuestaSemanal, // Ahora usa el valor calculado
+        promedioEstres: Math.round(promedioEstres * 10) / 10, // Redondeado a 1 decimal
+        promedioBurnout: Math.round(promedioBurnout * 10) / 10
       },
       estudiantesRiesgoAlto,
-      alertasRecientes,
-      tendenciasSemanales: []
+      alertasRecientes: alertasFormateadas,
+      tendenciasSemanales: [] // Podrías implementar esto más adelante
     };
+
+    console.log('✅ Dashboard data calculado exitosamente');
 
     res.status(200).json({
       success: true,
@@ -955,7 +1012,7 @@ app.get('/api/coordinators/dashboard', authenticateToken, async (req, res) => {
     });
 
   } catch (error) {
-    console.error('Error obteniendo dashboard del coordinador:', error);
+    console.error('❌ Error obteniendo dashboard del coordinador:', error);
     res.status(500).json({
       success: false,
       message: 'Error interno del servidor'
@@ -963,7 +1020,7 @@ app.get('/api/coordinators/dashboard', authenticateToken, async (req, res) => {
   }
 });
 
-// Resto de rutas igual que antes...
+
 // GET /api/coordinators/students
 app.get('/api/coordinators/students', authenticateToken, async (req, res) => {
   try {

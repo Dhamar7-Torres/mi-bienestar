@@ -27,8 +27,8 @@ function Navigation() {
       return [
         { name: 'Dashboard', href: ROUTES.COORDINATOR_DASHBOARD, icon: '📈' },
         { name: 'Estudiantes', href: ROUTES.COORDINATOR_STUDENTS, icon: '👥' },
-        { name: 'Alertas', href: ROUTES.COORDINATOR_ALERTS, icon: '🚨' },
-        { name: 'Reportes', href: ROUTES.COORDINATOR_REPORTS, icon: '📋' }
+        { name: 'Alertas', href: ROUTES.COORDINATOR_ALERTS, icon: '🚨' }
+        // Removido: { name: 'Reportes', href: ROUTES.COORDINATOR_REPORTS, icon: '📋' }
       ];
     }
     return [];
