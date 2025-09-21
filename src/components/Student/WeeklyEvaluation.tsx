@@ -47,6 +47,7 @@ function WeeklyEvaluation() {
         setIsLoading(true);
         setError(null);
         
+        console.log('🔄 Cargando preguntas de evaluación...');
         const response = await apiService.getEvaluationQuestions();
         
         if (response.success && response.data) {
@@ -59,14 +60,18 @@ function WeeklyEvaluation() {
             const burnoutLength = data.categorias.burnout.preguntas?.length || 0;
             setRespuestasEstres(new Array(estresLength).fill(-1));
             setRespuestasBurnout(new Array(burnoutLength).fill(-1));
+            
+            console.log(`✅ Preguntas cargadas: ${estresLength} estrés, ${burnoutLength} burnout`);
           } else {
+            console.error('❌ Estructura de preguntas inválida:', data);
             setError('Estructura de preguntas inválida');
           }
         } else {
+          console.error('❌ Error en respuesta del servidor:', response);
           setError(response.message || 'Error al cargar las preguntas');
         }
       } catch (error: any) {
-        console.error('Error fetching questions:', error);
+        console.error('❌ Error fetching questions:', error);
         setError(error.message || 'Error de conexión');
       } finally {
         setIsLoading(false);
@@ -76,28 +81,96 @@ function WeeklyEvaluation() {
     fetchQuestions();
   }, []);
 
+  // ===== FUNCIONES AUXILIARES MEJORADAS =====
+
+  // Función auxiliar para validar que la evaluación esté completa
+  const validarEvaluacionCompleta = (): boolean => {
+    const estresCompletas = respuestasEstres.every(r => r >= 0 && r <= 4);
+    const burnoutCompletas = respuestasBurnout.every(r => r >= 0 && r <= 4);
+    const tieneRespuestas = respuestasEstres.length > 0 && respuestasBurnout.length > 0;
+    
+    const esValida = estresCompletas && burnoutCompletas && tieneRespuestas;
+    
+    if (!esValida) {
+      console.log('❌ Validación fallida:', {
+        estresCompletas,
+        burnoutCompletas,
+        tieneRespuestas,
+        respuestasEstres,
+        respuestasBurnout
+      });
+    }
+    
+    return esValida;
+  };
+
+  // Función para verificar si se puede avanzar al siguiente paso
+  const canProceedToNext = (): boolean => {
+    switch (currentStep) {
+      case 0: 
+        return true; // Instrucciones - siempre se puede avanzar
+      case 1: 
+        const estresCompleto = respuestasEstres.every(r => r >= 0);
+        console.log(`📊 Paso 1 - Estrés completo: ${estresCompleto}`, respuestasEstres);
+        return estresCompleto;
+      case 2: 
+        const burnoutCompleto = respuestasBurnout.every(r => r >= 0);
+        console.log(`📊 Paso 2 - Burnout completo: ${burnoutCompleto}`, respuestasBurnout);
+        return burnoutCompleto;
+      case 3: 
+        // Para el paso final, verificar que ambas categorías estén completas
+        const evaluacionCompleta = validarEvaluacionCompleta();
+        console.log(`📊 Paso 3 - Evaluación completa: ${evaluacionCompleta}`);
+        return evaluacionCompleta;
+      default: 
+        return false;
+    }
+  };
+
+  // Función para obtener el progreso detallado
+  const getProgressDetails = () => {
+    const estresCompletadas = respuestasEstres.filter(r => r >= 0).length;
+    const burnoutCompletadas = respuestasBurnout.filter(r => r >= 0).length;
+    const totalEstres = respuestasEstres.length;
+    const totalBurnout = respuestasBurnout.length;
+    
+    return {
+      estresCompletadas,
+      burnoutCompletadas,
+      totalEstres,
+      totalBurnout,
+      porcentajeEstres: totalEstres > 0 ? (estresCompletadas / totalEstres) * 100 : 0,
+      porcentajeBurnout: totalBurnout > 0 ? (burnoutCompletadas / totalBurnout) * 100 : 0
+    };
+  };
+
+  // ===== HANDLERS DE EVENTOS =====
+
   const handleRespuestaEstres = (index: number, valor: number) => {
-    if (index >= 0 && index < respuestasEstres.length) {
+    if (index >= 0 && index < respuestasEstres.length && valor >= 0 && valor <= 4) {
       const nuevasRespuestas = [...respuestasEstres];
       nuevasRespuestas[index] = valor;
       setRespuestasEstres(nuevasRespuestas);
+      console.log(`📝 Respuesta estrés ${index + 1}: ${valor}`);
+      
+      // Limpiar error si existía
+      if (error) {
+        setError(null);
+      }
     }
   };
 
   const handleRespuestaBurnout = (index: number, valor: number) => {
-    if (index >= 0 && index < respuestasBurnout.length) {
+    if (index >= 0 && index < respuestasBurnout.length && valor >= 0 && valor <= 4) {
       const nuevasRespuestas = [...respuestasBurnout];
       nuevasRespuestas[index] = valor;
       setRespuestasBurnout(nuevasRespuestas);
-    }
-  };
-
-  const canProceedToNext = () => {
-    switch (currentStep) {
-      case 0: return true; // Instrucciones
-      case 1: return respuestasEstres.every(r => r >= 0); // Todas las preguntas de estrés respondidas
-      case 2: return respuestasBurnout.every(r => r >= 0); // Todas las preguntas de burnout respondidas
-      default: return false;
+      console.log(`📝 Respuesta burnout ${index + 1}: ${valor}`);
+      
+      // Limpiar error si existía
+      if (error) {
+        setError(null);
+      }
     }
   };
 
@@ -106,80 +179,123 @@ function WeeklyEvaluation() {
       setCurrentStep(currentStep + 1);
       if (currentStep === 0) {
         setTiempoInicio(Date.now());
+        console.log('⏱️ Iniciando cronómetro de evaluación');
       }
+      console.log(`➡️ Avanzando al paso ${currentStep + 1}`);
+      
+      // Limpiar errores al avanzar
+      if (error) {
+        setError(null);
+      }
+    } else {
+      console.log('❌ No se puede avanzar:', { currentStep, canProceed: canProceedToNext() });
     }
   };
 
   const handlePrevious = () => {
     if (currentStep > 0) {
       setCurrentStep(currentStep - 1);
+      console.log(`⬅️ Retrocediendo al paso ${currentStep - 1}`);
+      
+      // Limpiar errores al retroceder
+      if (error) {
+        setError(null);
+      }
     }
   };
 
   // Función mejorada para calcular promedio excluyendo valores -1
-  const calcularPromedio = (respuestas: number[]) => {
+  const calcularPromedio = (respuestas: number[]): number => {
     const respuestasValidas = respuestas.filter(r => r >= 0);
     if (respuestasValidas.length === 0) return 0;
     return respuestasValidas.reduce((a, b) => a + b, 0) / respuestasValidas.length;
   };
 
+  // Función principal para enviar la evaluación
   const handleSubmit = async () => {
     try {
       setIsSubmitting(true);
       setError(null);
       
-      // Validar que todas las respuestas estén completadas
-      if (!canProceedToNext()) {
-        setError('Por favor completa todas las preguntas antes de enviar');
+      console.log('🚀 Iniciando envío de evaluación...');
+      console.log('Estado actual:', {
+        currentStep,
+        respuestasEstres,
+        respuestasBurnout,
+        canProceed: canProceedToNext()
+      });
+      
+      // Validación completa antes de enviar
+      if (!validarEvaluacionCompleta()) {
+        const mensaje = 'Por favor completa todas las preguntas antes de enviar';
+        console.error('❌ Validación fallida:', mensaje);
+        setError(mensaje);
         return;
       }
 
       // Verificar que no haya respuestas inválidas
-      const tieneRespuestasInvalidas = respuestasEstres.some(r => r < 0) || 
-                                      respuestasBurnout.some(r => r < 0);
+      const tieneRespuestasInvalidas = 
+        respuestasEstres.some(r => r < 0 || r > 4) || 
+        respuestasBurnout.some(r => r < 0 || r > 4);
       
       if (tieneRespuestasInvalidas) {
-        setError('Hay preguntas sin responder. Por favor completa todas las preguntas.');
+        const mensaje = 'Hay respuestas inválidas. Por favor revisa tus respuestas.';
+        console.error('❌ Respuestas inválidas detectadas');
+        setError(mensaje);
         return;
       }
       
       const tiempoRespuesta = Math.round((Date.now() - tiempoInicio) / 1000);
+      console.log(`⏱️ Tiempo total de respuesta: ${tiempoRespuesta} segundos`);
       
       const evaluationData = {
-        respuestasEstres: respuestasEstres.filter(r => r >= 0), // Solo respuestas válidas
-        respuestasBurnout: respuestasBurnout.filter(r => r >= 0), // Solo respuestas válidas
+        respuestasEstres: respuestasEstres,
+        respuestasBurnout: respuestasBurnout,
         tiempoRespuesta
       };
 
-      console.log('Enviando evaluación:', evaluationData);
+      console.log('📤 Enviando evaluación:', evaluationData);
 
       const response = await apiService.submitEvaluation(evaluationData);
       
+      console.log('📥 Respuesta del servidor:', response);
+      
       if (response.success) {
+        console.log('✅ Evaluación enviada exitosamente');
         // Redirigir al dashboard con un mensaje de éxito
         navigate(ROUTES.STUDENT_DASHBOARD, { 
           state: { message: 'Evaluación enviada exitosamente' }
         });
       } else {
-        setError(response.message || 'Error al enviar la evaluación');
+        const mensaje = response.message || 'Error al enviar la evaluación';
+        console.error('❌ Error del servidor:', mensaje);
+        setError(mensaje);
       }
     } catch (error: any) {
-      console.error('Error submitting evaluation:', error);
-      setError(error.message || 'Error de conexión');
+      console.error('❌ Error submitting evaluation:', error);
+      const mensaje = error.message || 'Error de conexión. Por favor intenta nuevamente.';
+      setError(mensaje);
     } finally {
       setIsSubmitting(false);
+      console.log('🏁 Proceso de envío finalizado');
     }
   };
 
-  const getProgressPercentage = () => {
+  // ===== FUNCIONES DE UTILIDAD =====
+
+  const getProgressPercentage = (): number => {
     return (currentStep / 3) * 100;
   };
 
   const getCompletedQuestionsCount = () => {
-    const estresCompletadas = respuestasEstres.filter(r => r >= 0).length;
-    const burnoutCompletadas = respuestasBurnout.filter(r => r >= 0).length;
-    return { estresCompletadas, burnoutCompletadas };
+    const progressDetails = getProgressDetails();
+    return {
+      estresCompletadas: progressDetails.estresCompletadas,
+      burnoutCompletadas: progressDetails.burnoutCompletadas
+    };
   };
+
+  // ===== RENDERIZADO CONDICIONAL =====
 
   if (isLoading) {
     return (
@@ -190,7 +306,7 @@ function WeeklyEvaluation() {
     );
   }
 
-  if (error) {
+  if (error && !preguntasData) {
     return (
       <div>
         <Navigation />
@@ -334,11 +450,22 @@ function WeeklyEvaluation() {
                   {preguntasData.categorias.estres.descripcion}
                 </p>
 
+                {/* Indicador de progreso para esta sección */}
+                <div className="mb-6 p-3 bg-blue-50 rounded-lg">
+                  <div className="flex justify-between text-sm text-blue-800">
+                    <span>Progreso en esta sección:</span>
+                    <span>{getCompletedQuestionsCount().estresCompletadas}/{respuestasEstres.length}</span>
+                  </div>
+                </div>
+
                 <div className="space-y-6">
                   {preguntasData.categorias.estres.preguntas?.map((pregunta, index) => (
                     <div key={pregunta.id || index} className="border border-gray-200 rounded-lg p-4">
                       <h3 className="font-medium text-gray-900 mb-3">
                         {index + 1}. {pregunta.texto}
+                        {respuestasEstres[index] >= 0 && (
+                          <span className="ml-2 text-green-600">✓</span>
+                        )}
                       </h3>
                       
                       <div className="grid grid-cols-5 gap-2">
@@ -380,11 +507,22 @@ function WeeklyEvaluation() {
                   {preguntasData.categorias.burnout.descripcion}
                 </p>
 
+                {/* Indicador de progreso para esta sección */}
+                <div className="mb-6 p-3 bg-orange-50 rounded-lg">
+                  <div className="flex justify-between text-sm text-orange-800">
+                    <span>Progreso en esta sección:</span>
+                    <span>{getCompletedQuestionsCount().burnoutCompletadas}/{respuestasBurnout.length}</span>
+                  </div>
+                </div>
+
                 <div className="space-y-6">
                   {preguntasData.categorias.burnout.preguntas?.map((pregunta, index) => (
                     <div key={pregunta.id || index} className="border border-gray-200 rounded-lg p-4">
                       <h3 className="font-medium text-gray-900 mb-3">
                         {index + 1}. {pregunta.texto}
+                        {respuestasBurnout[index] >= 0 && (
+                          <span className="ml-2 text-green-600">✓</span>
+                        )}
                       </h3>
                       
                       <div className="grid grid-cols-5 gap-2">
@@ -430,6 +568,14 @@ function WeeklyEvaluation() {
                       <div className="text-sm text-red-700">
                         <p><strong>Respuestas completadas:</strong> {getCompletedQuestionsCount().estresCompletadas}/{respuestasEstres.length}</p>
                         <p><strong>Promedio:</strong> {calcularPromedio(respuestasEstres).toFixed(1)}/4</p>
+                        <div className="mt-2">
+                          <div className="w-full bg-red-200 rounded-full h-2">
+                            <div 
+                              className="bg-red-600 h-2 rounded-full"
+                              style={{ width: `${(calcularPromedio(respuestasEstres) / 4) * 100}%` }}
+                            ></div>
+                          </div>
+                        </div>
                       </div>
                     </div>
 
@@ -438,6 +584,14 @@ function WeeklyEvaluation() {
                       <div className="text-sm text-orange-700">
                         <p><strong>Respuestas completadas:</strong> {getCompletedQuestionsCount().burnoutCompletadas}/{respuestasBurnout.length}</p>
                         <p><strong>Promedio:</strong> {calcularPromedio(respuestasBurnout).toFixed(1)}/4</p>
+                        <div className="mt-2">
+                          <div className="w-full bg-orange-200 rounded-full h-2">
+                            <div 
+                              className="bg-orange-600 h-2 rounded-full"
+                              style={{ width: `${(calcularPromedio(respuestasBurnout) / 4) * 100}%` }}
+                            ></div>
+                          </div>
+                        </div>
                       </div>
                     </div>
                   </div>
@@ -458,14 +612,43 @@ function WeeklyEvaluation() {
                       Tu bienestar es importante para nosotros.
                     </p>
                   </div>
+
+                  {/* Indicador de estado de la evaluación */}
+                  <div className={`p-4 rounded-lg ${validarEvaluacionCompleta() ? 'bg-green-50 border-green-200' : 'bg-yellow-50 border-yellow-200'} border`}>
+                    <div className="flex items-center">
+                      <span className="text-2xl mr-3">
+                        {validarEvaluacionCompleta() ? '✅' : '⚠️'}
+                      </span>
+                      <div>
+                        <p className={`font-semibold ${validarEvaluacionCompleta() ? 'text-green-800' : 'text-yellow-800'}`}>
+                          {validarEvaluacionCompleta() 
+                            ? 'Evaluación lista para enviar' 
+                            : 'Revisa que todas las preguntas estén respondidas'
+                          }
+                        </p>
+                        {!validarEvaluacionCompleta() && (
+                          <p className="text-yellow-700 text-sm mt-1">
+                            Asegúrate de haber respondido todas las preguntas antes de enviar.
+                          </p>
+                        )}
+                      </div>
+                    </div>
+                  </div>
                 </div>
               </div>
             )}
 
             {/* Mostrar error si existe */}
-            {error && currentStep === 3 && (
+            {error && (
               <div className="mt-4 p-4 bg-red-50 border-l-4 border-red-400 rounded">
-                <p className="text-red-700">{error}</p>
+                <div className="flex">
+                  <div className="flex-shrink-0">
+                    <span className="text-red-400 text-xl">⚠️</span>
+                  </div>
+                  <div className="ml-3">
+                    <p className="text-red-700">{error}</p>
+                  </div>
+                </div>
               </div>
             )}
 
@@ -484,6 +667,7 @@ function WeeklyEvaluation() {
                   onClick={handleNext}
                   disabled={!canProceedToNext()}
                   className="btn-primary disabled:opacity-50 disabled:cursor-not-allowed"
+                  title={!canProceedToNext() ? 'Completa todas las preguntas para continuar' : ''}
                 >
                   {currentStep === 0 ? 'Comenzar Evaluación' : 'Siguiente'}
                 </button>
@@ -492,6 +676,7 @@ function WeeklyEvaluation() {
                   onClick={handleSubmit}
                   disabled={isSubmitting || !canProceedToNext()}
                   className="btn-success disabled:opacity-50 disabled:cursor-not-allowed"
+                  title={!canProceedToNext() ? 'Completa todas las preguntas para enviar' : ''}
                 >
                   {isSubmitting ? (
                     <div className="flex items-center">
