@@ -80,14 +80,20 @@ function StudentDashboard() {
     return (
       <div>
         <Navigation />
-        <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-          <div className="text-center">
+        <div className="min-h-screen bg-gradient-to-br from-cyan-200 via-teal-100 to-sky-50 flex items-center justify-center relative overflow-hidden">
+          {/* Elementos decorativos de fondo */}
+          <div className="absolute inset-0 overflow-hidden">
+            <div className="absolute -top-40 -right-40 w-80 h-80 rounded-full bg-gradient-to-r from-cyan-200 to-blue-200 opacity-20 blur-3xl"></div>
+            <div className="absolute -bottom-40 -left-40 w-80 h-80 rounded-full bg-gradient-to-r from-sky-200 to-cyan-200 opacity-20 blur-3xl"></div>
+          </div>
+          
+          <div className="text-center relative z-10 bg-white/70 backdrop-blur-lg border border-white/20 rounded-2xl shadow-xl p-8">
             <div className="text-red-600 text-6xl mb-4">⚠️</div>
-            <h2 className="text-2xl font-bold text-gray-900 mb-2">Error al cargar</h2>
-            <p className="text-gray-600 mb-4">{error}</p>
+            <h2 className="text-2xl font-bold bg-gradient-to-r from-gray-800 to-gray-600 bg-clip-text text-transparent mb-2">Error al cargar</h2>
+            <p className="text-gray-600 mb-6">{error}</p>
             <button 
               onClick={() => window.location.reload()}
-              className="btn-primary"
+              className="px-6 py-3 bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-600 hover:to-blue-700 text-white font-semibold rounded-xl shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 transition-all duration-200"
             >
               Reintentar
             </button>
@@ -102,14 +108,20 @@ function StudentDashboard() {
     return (
       <div>
         <Navigation />
-        <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-          <div className="text-center">
+        <div className="min-h-screen bg-gradient-to-br from-cyan-200 via-teal-100 to-sky-50 flex items-center justify-center relative overflow-hidden">
+          {/* Elementos decorativos de fondo */}
+          <div className="absolute inset-0 overflow-hidden">
+            <div className="absolute -top-40 -right-40 w-80 h-80 rounded-full bg-gradient-to-r from-cyan-200 to-blue-200 opacity-20 blur-3xl"></div>
+            <div className="absolute -bottom-40 -left-40 w-80 h-80 rounded-full bg-gradient-to-r from-sky-200 to-cyan-200 opacity-20 blur-3xl"></div>
+          </div>
+          
+          <div className="text-center relative z-10 bg-white/70 backdrop-blur-lg border border-white/20 rounded-2xl shadow-xl p-8">
             <div className="text-yellow-600 text-6xl mb-4">⚠️</div>
-            <h2 className="text-2xl font-bold text-gray-900 mb-2">Datos no disponibles</h2>
-            <p className="text-gray-600 mb-4">No se pudieron cargar los datos del estudiante</p>
+            <h2 className="text-2xl font-bold bg-gradient-to-r from-gray-800 to-gray-600 bg-clip-text text-transparent mb-2">Datos no disponibles</h2>
+            <p className="text-gray-600 mb-6">No se pudieron cargar los datos del estudiante</p>
             <button 
               onClick={() => window.location.reload()}
-              className="btn-primary"
+              className="px-6 py-3 bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-600 hover:to-blue-700 text-white font-semibold rounded-xl shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 transition-all duration-200"
             >
               Reintentar
             </button>
@@ -133,14 +145,20 @@ function StudentDashboard() {
     return (
       <div>
         <Navigation />
-        <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-          <div className="text-center">
+        <div className="min-h-screen bg-gradient-to-br from-cyan-200 via-teal-100 to-sky-50 flex items-center justify-center relative overflow-hidden">
+          {/* Elementos decorativos de fondo */}
+          <div className="absolute inset-0 overflow-hidden">
+            <div className="absolute -top-40 -right-40 w-80 h-80 rounded-full bg-gradient-to-r from-cyan-200 to-blue-200 opacity-20 blur-3xl"></div>
+            <div className="absolute -bottom-40 -left-40 w-80 h-80 rounded-full bg-gradient-to-r from-sky-200 to-cyan-200 opacity-20 blur-3xl"></div>
+          </div>
+          
+          <div className="text-center relative z-10 bg-white/70 backdrop-blur-lg border border-white/20 rounded-2xl shadow-xl p-8">
             <div className="text-yellow-600 text-6xl mb-4">⚠️</div>
-            <h2 className="text-2xl font-bold text-gray-900 mb-2">Perfil incompleto</h2>
-            <p className="text-gray-600 mb-4">Faltan datos del estado actual del estudiante</p>
+            <h2 className="text-2xl font-bold bg-gradient-to-r from-gray-800 to-gray-600 bg-clip-text text-transparent mb-2">Perfil incompleto</h2>
+            <p className="text-gray-600 mb-6">Faltan datos del estado actual del estudiante</p>
             <button 
               onClick={() => window.location.reload()}
-              className="btn-primary"
+              className="px-6 py-3 bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-600 hover:to-blue-700 text-white font-semibold rounded-xl shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 transition-all duration-200"
             >
               Reintentar
             </button>
@@ -156,14 +174,21 @@ function StudentDashboard() {
     <div>
       <Navigation />
       
-      <div className="min-h-screen bg-gray-50">
-        <div className="max-w-7xl mx-auto py-6 px-4 sm:px-6 lg:px-8">
+      <div className="min-h-screen bg-gradient-to-br from-cyan-200 via-teal-100 to-sky-50 relative overflow-hidden">
+        {/* Elementos decorativos de fondo */}
+        <div className="absolute inset-0 overflow-hidden">
+          <div className="absolute -top-40 -right-40 w-80 h-80 rounded-full bg-gradient-to-r from-cyan-200 to-blue-200 opacity-20 blur-3xl"></div>
+          <div className="absolute -bottom-40 -left-40 w-80 h-80 rounded-full bg-gradient-to-r from-sky-200 to-cyan-200 opacity-20 blur-3xl"></div>
+          <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-96 h-96 rounded-full bg-gradient-to-r from-blue-100 to-cyan-100 opacity-10 blur-3xl"></div>
+        </div>
+
+        <div className="max-w-7xl mx-auto py-6 px-4 sm:px-6 lg:px-8 relative z-10">
           {/* Encabezado de bienvenida */}
-          <div className="mb-8">
-            <h1 className="text-3xl font-bold text-gray-900">
+          <div className="mb-8 text-center">
+            <h1 className="text-4xl font-bold bg-gradient-to-r from-gray-800 to-gray-600 bg-clip-text text-transparent mb-4">
               ¡Hola, {estudiante.nombreCompleto || 'Estudiante'}! 👋
             </h1>
-            <p className="mt-2 text-gray-600">
+            <p className="text-lg text-gray-600 font-medium">
               {estudiante.carrera || 'Carrera'} - {estudiante.semestre || 'N'}° Semestre
             </p>
           </div>
@@ -171,7 +196,7 @@ function StudentDashboard() {
           {/* Alertas activas */}
           {alertasActivas && alertasActivas.length > 0 && (
             <div className="mb-6">
-              <div className="bg-yellow-50 border-l-4 border-yellow-400 p-4 rounded-lg">
+              <div className="bg-gradient-to-r from-yellow-50 to-amber-50 border-l-4 border-yellow-400 p-4 rounded-xl shadow-lg">
                 <div className="flex">
                   <div className="flex-shrink-0">
                     <svg className="h-5 w-5 text-yellow-400" viewBox="0 0 20 20" fill="currentColor">
@@ -179,10 +204,10 @@ function StudentDashboard() {
                     </svg>
                   </div>
                   <div className="ml-3">
-                    <h3 className="text-sm font-medium text-yellow-800">
+                    <h3 className="text-sm font-semibold text-yellow-800">
                       Tienes {alertasActivas.length} alerta{alertasActivas.length > 1 ? 's' : ''} pendiente{alertasActivas.length > 1 ? 's' : ''}
                     </h3>
-                    <div className="mt-2 text-sm text-yellow-700">
+                    <div className="mt-2 text-sm text-yellow-700 font-medium">
                       {alertasActivas.slice(0, 2).map((alerta, index) => (
                         <div key={alerta.id || index} className="mb-1">
                           - {alerta.mensaje || 'Alerta sin mensaje'}
@@ -199,71 +224,71 @@ function StudentDashboard() {
             {/* Columna izquierda - Estado actual */}
             <div className="lg:col-span-2 space-y-6">
               {/* Estado actual */}
-              <div className="card">
-                <div className="card-header">
-                  <h2 className="text-xl font-semibold text-gray-900">Mi Estado Actual</h2>
+              <div className="bg-white/70 backdrop-blur-lg border border-white/20 rounded-2xl shadow-xl p-6">
+                <div className="mb-6">
+                  <h2 className="text-xl font-semibold bg-gradient-to-r from-gray-800 to-gray-600 bg-clip-text text-transparent">Mi Estado Actual</h2>
                 </div>
                 
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                   <div className="text-center">
-                    <div className={`mx-auto w-16 h-16 rounded-full flex items-center justify-center ${riskColors.bg} ${riskColors.border} border-2 mb-3`}>
+                    <div className={`mx-auto w-16 h-16 rounded-2xl flex items-center justify-center ${riskColors.bg} ${riskColors.border} border-2 mb-3 shadow-lg`}>
                       <span className="text-2xl font-bold text-gray-800">
                         {estudiante.estadoActual.estadoRiesgo === 'ALTO' ? '🚨' : 
                          estudiante.estadoActual.estadoRiesgo === 'MEDIO' ? '⚠️' : '✅'}
                       </span>
                     </div>
-                    <h3 className="font-medium text-gray-900">Estado General</h3>
-                    <p className={`text-sm font-semibold ${riskColors.text}`}>
+                    <h3 className="font-semibold text-gray-900">Estado General</h3>
+                    <p className={`text-sm font-bold ${riskColors.text}`}>
                       Riesgo {estudiante.estadoActual.estadoRiesgo || 'DESCONOCIDO'}
                     </p>
                   </div>
 
                   <div className="text-center">
-                    <div className="mx-auto w-16 h-16 rounded-full flex items-center justify-center bg-red-100 border-2 border-red-200 mb-3">
+                    <div className="mx-auto w-16 h-16 rounded-2xl flex items-center justify-center bg-gradient-to-r from-red-100 to-red-200 border-2 border-red-300 mb-3 shadow-lg">
                       <span className="text-xl font-bold text-red-800">
                         {estudiante.estadoActual.nivelEstres || 0}/10
                       </span>
                     </div>
-                    <h3 className="font-medium text-gray-900">Nivel de Estrés</h3>
-                    <p className="text-sm text-gray-600">Última evaluación</p>
+                    <h3 className="font-semibold text-gray-900">Nivel de Estrés</h3>
+                    <p className="text-sm text-gray-600 font-medium">Última evaluación</p>
                   </div>
 
                   <div className="text-center">
-                    <div className="mx-auto w-16 h-16 rounded-full flex items-center justify-center bg-orange-100 border-2 border-orange-200 mb-3">
+                    <div className="mx-auto w-16 h-16 rounded-2xl flex items-center justify-center bg-gradient-to-r from-orange-100 to-orange-200 border-2 border-orange-300 mb-3 shadow-lg">
                       <span className="text-xl font-bold text-orange-800">
                         {estudiante.estadoActual.nivelBurnout || 0}/10
                       </span>
                     </div>
-                    <h3 className="font-medium text-gray-900">Nivel de Burnout</h3>
-                    <p className="text-sm text-gray-600">Agotamiento emocional</p>
+                    <h3 className="font-semibold text-gray-900">Nivel de Burnout</h3>
+                    <p className="text-sm text-gray-600 font-medium">Agotamiento emocional</p>
                   </div>
                 </div>
 
-                <div className="mt-4 pt-4 border-t border-gray-200">
-                  <p className="text-sm text-gray-600">
+                <div className="mt-4 pt-4 border-t border-white/30">
+                  <p className="text-sm text-gray-600 font-medium">
                     <strong>Última evaluación:</strong> {formatearFecha(estudiante.estadoActual.fechaUltimaEvaluacion)}
                   </p>
                 </div>
               </div>
 
               {/* Estadísticas */}
-              <div className="card">
-                <div className="card-header">
-                  <h2 className="text-xl font-semibold text-gray-900">Mis Estadísticas</h2>
+              <div className="bg-white/70 backdrop-blur-lg border border-white/20 rounded-2xl shadow-xl p-6">
+                <div className="mb-6">
+                  <h2 className="text-xl font-semibold bg-gradient-to-r from-gray-800 to-gray-600 bg-clip-text text-transparent">Mis Estadísticas</h2>
                 </div>
                 
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                   <div className="text-center">
                     <div className="text-2xl font-bold text-blue-600">{estadisticas.totalEvaluaciones}</div>
-                    <div className="text-sm text-gray-600">Evaluaciones</div>
+                    <div className="text-sm text-gray-600 font-medium">Evaluaciones</div>
                   </div>
                   <div className="text-center">
                     <div className="text-2xl font-bold text-red-600">{estadisticas.promedioEstres.toFixed(1)}</div>
-                    <div className="text-sm text-gray-600">Promedio Estrés</div>
+                    <div className="text-sm text-gray-600 font-medium">Promedio Estrés</div>
                   </div>
                   <div className="text-center">
                     <div className="text-2xl font-bold text-orange-600">{estadisticas.promedioBurnout.toFixed(1)}</div>
-                    <div className="text-sm text-gray-600">Promedio Burnout</div>
+                    <div className="text-sm text-gray-600 font-medium">Promedio Burnout</div>
                   </div>
                   <div className="text-center">
                     <div className={`text-2xl font-bold ${
@@ -273,30 +298,30 @@ function StudentDashboard() {
                       {estadisticas.tendencia === 'mejorando' ? '📈' :
                        estadisticas.tendencia === 'empeorando' ? '📉' : '➖'}
                     </div>
-                    <div className="text-sm text-gray-600">Tendencia</div>
+                    <div className="text-sm text-gray-600 font-medium">Tendencia</div>
                   </div>
                 </div>
               </div>
 
               {/* Evaluaciones recientes */}
-              <div className="card">
-                <div className="card-header">
-                  <h2 className="text-xl font-semibold text-gray-900">Evaluaciones Recientes</h2>
+              <div className="bg-white/70 backdrop-blur-lg border border-white/20 rounded-2xl shadow-xl p-6">
+                <div className="mb-6">
+                  <h2 className="text-xl font-semibold bg-gradient-to-r from-gray-800 to-gray-600 bg-clip-text text-transparent">Evaluaciones Recientes</h2>
                 </div>
                 
                 {evaluacionesRecientes && evaluacionesRecientes.length > 0 ? (
                   <div className="space-y-3">
                     {evaluacionesRecientes.slice(0, 3).map((evaluacion) => (
-                      <div key={evaluacion.id} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                      <div key={evaluacion.id} className="flex items-center justify-between p-3 bg-white/50 backdrop-blur-sm rounded-xl border border-white/30 hover:shadow-md transition-all duration-200">
                         <div>
-                          <p className="font-medium text-gray-900">
+                          <p className="font-semibold text-gray-900">
                             {formatearFecha(evaluacion.fechaEvaluacion)}
                           </p>
-                          <p className="text-sm text-gray-600">
+                          <p className="text-sm text-gray-600 font-medium">
                             Estrés: {evaluacion.puntajeEstres || 0}/10 • Burnout: {evaluacion.puntajeBurnout || 0}/10
                           </p>
                         </div>
-                        <div className={`px-2 py-1 rounded-full text-xs font-medium ${getRiskColor(evaluacion.nivelRiesgo).bg} ${getRiskColor(evaluacion.nivelRiesgo).text}`}>
+                        <div className={`px-3 py-1 rounded-full text-xs font-bold shadow-sm ${getRiskColor(evaluacion.nivelRiesgo).bg} ${getRiskColor(evaluacion.nivelRiesgo).text}`}>
                           {evaluacion.nivelRiesgo}
                         </div>
                       </div>
@@ -304,14 +329,14 @@ function StudentDashboard() {
                     <div className="pt-3">
                       <Link 
                         to={ROUTES.STUDENT_HISTORY}
-                        className="text-blue-600 hover:text-blue-700 text-sm font-medium"
+                        className="text-transparent bg-gradient-to-r from-blue-600 to-cyan-600 bg-clip-text hover:from-blue-700 hover:to-cyan-700 text-sm font-semibold transition-all duration-200"
                       >
                         Ver historial completo →
                       </Link>
                     </div>
                   </div>
                 ) : (
-                  <p className="text-gray-500 text-center py-4">
+                  <p className="text-gray-500 text-center py-4 font-medium">
                     No has realizado evaluaciones aún
                   </p>
                 )}
@@ -321,26 +346,26 @@ function StudentDashboard() {
             {/* Columna derecha - Acciones */}
             <div className="space-y-6">
               {/* Evaluación semanal */}
-              <div className="card">
-                <div className="card-header">
-                  <h2 className="text-xl font-semibold text-gray-900">Evaluación Semanal</h2>
+              <div className="bg-white/70 backdrop-blur-lg border border-white/20 rounded-2xl shadow-xl p-6">
+                <div className="mb-6">
+                  <h2 className="text-xl font-semibold bg-gradient-to-r from-gray-800 to-gray-600 bg-clip-text text-transparent">Evaluación Semanal</h2>
                 </div>
                 
                 {evaluacionSemanal.puedeEvaluar ? (
                   <div className="text-center">
                     <div className="mb-4">
-                      <div className="w-16 h-16 mx-auto bg-green-100 rounded-full flex items-center justify-center mb-3">
+                      <div className="w-16 h-16 mx-auto bg-gradient-to-r from-green-100 to-green-200 border-2 border-green-300 rounded-2xl flex items-center justify-center mb-3 shadow-lg">
                         <svg className="w-8 h-8 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
                         </svg>
                       </div>
-                      <p className="text-gray-600 mb-4">
+                      <p className="text-gray-600 mb-4 font-medium">
                         ¡Es hora de tu evaluación semanal! Toma unos minutos para evaluar cómo te has sentido.
                       </p>
                     </div>
                     <Link
                       to={ROUTES.STUDENT_EVALUATION}
-                      className="btn-primary w-full text-center block"
+                      className="block w-full px-6 py-3 bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-600 hover:to-blue-700 text-white font-semibold rounded-xl shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 transition-all duration-200 text-center"
                     >
                       Comenzar Evaluación
                     </Link>
@@ -348,16 +373,16 @@ function StudentDashboard() {
                 ) : (
                   <div className="text-center">
                     <div className="mb-4">
-                      <div className="w-16 h-16 mx-auto bg-yellow-100 rounded-full flex items-center justify-center mb-3">
+                      <div className="w-16 h-16 mx-auto bg-gradient-to-r from-yellow-100 to-yellow-200 border-2 border-yellow-300 rounded-2xl flex items-center justify-center mb-3 shadow-lg">
                         <svg className="w-8 h-8 text-yellow-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
                         </svg>
                       </div>
-                      <p className="text-gray-600 mb-2">
+                      <p className="text-gray-600 mb-2 font-medium">
                         {evaluacionSemanal.razon}
                       </p>
                       {evaluacionSemanal.proximaDisponible && (
-                        <p className="text-sm text-gray-500">
+                        <p className="text-sm text-gray-500 font-medium">
                           Próxima evaluación: {formatearFecha(evaluacionSemanal.proximaDisponible)}
                         </p>
                       )}
@@ -367,31 +392,31 @@ function StudentDashboard() {
               </div>
 
               {/* Recursos */}
-              <div className="card">
-                <div className="card-header">
-                  <h2 className="text-xl font-semibold text-gray-900">Recursos de Ayuda</h2>
+              <div className="bg-white/70 backdrop-blur-lg border border-white/20 rounded-2xl shadow-xl p-6">
+                <div className="mb-6">
+                  <h2 className="text-xl font-semibold bg-gradient-to-r from-gray-800 to-gray-600 bg-clip-text text-transparent">Recursos de Ayuda</h2>
                 </div>
                 
                 <div className="space-y-3">
                   <Link
                     to={ROUTES.STUDENT_RESOURCES}
-                    className="block p-3 bg-blue-50 hover:bg-blue-100 rounded-lg transition-colors duration-200"
+                    className="block p-3 bg-gradient-to-r from-blue-50 to-blue-100 hover:from-blue-100 hover:to-blue-200 border border-blue-200 rounded-xl transition-all duration-200 shadow-sm hover:shadow-md"
                   >
                     <div className="flex items-center">
                       <span className="text-2xl mr-3">📚</span>
                       <div>
-                        <h3 className="font-medium text-gray-900">Recursos Educativos</h3>
-                        <p className="text-sm text-gray-600">Videos, técnicas y consejos</p>
+                        <h3 className="font-semibold text-gray-900">Recursos Educativos</h3>
+                        <p className="text-sm text-gray-600 font-medium">Videos, técnicas y consejos</p>
                       </div>
                     </div>
                   </Link>
 
-                  <div className="p-3 bg-green-50 rounded-lg">
+                  <div className="p-3 bg-gradient-to-r from-green-50 to-green-100 border border-green-200 rounded-xl shadow-sm">
                     <div className="flex items-center">
                       <span className="text-2xl mr-3">🆘</span>
                       <div>
-                        <h3 className="font-medium text-gray-900">¿Necesitas ayuda inmediata?</h3>
-                        <p className="text-sm text-gray-600">Contacta a bienestar estudiantil</p>
+                        <h3 className="font-semibold text-gray-900">¿Necesitas ayuda inmediata?</h3>
+                        <p className="text-sm text-gray-600 font-medium">Contacta a bienestar estudiantil</p>
                       </div>
                     </div>
                   </div>
@@ -399,9 +424,9 @@ function StudentDashboard() {
               </div>
 
               {/* Información adicional */}
-              <div className="card">
+              <div className="bg-white/70 backdrop-blur-lg border border-white/20 rounded-2xl shadow-xl p-6">
                 <h3 className="font-semibold text-gray-900 mb-3">💡 Tip del día</h3>
-                <p className="text-sm text-gray-600">
+                <p className="text-sm text-gray-600 leading-relaxed">
                   Recuerda tomar descansos regulares durante tus estudios. La técnica Pomodoro (25 minutos de trabajo, 5 de descanso) puede ayudarte a mantener la concentración y reducir el estrés.
                 </p>
               </div>

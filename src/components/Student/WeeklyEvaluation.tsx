@@ -310,23 +310,31 @@ function WeeklyEvaluation() {
     return (
       <div>
         <Navigation />
-        <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-          <div className="text-center">
+        <div className="min-h-screen bg-gradient-to-br from-cyan-200 via-teal-100 to-sky-50 flex items-center justify-center relative overflow-hidden">
+          {/* Elementos decorativos de fondo */}
+          <div className="absolute inset-0 overflow-hidden">
+            <div className="absolute -top-40 -right-40 w-80 h-80 rounded-full bg-gradient-to-r from-cyan-200 to-blue-200 opacity-20 blur-3xl"></div>
+            <div className="absolute -bottom-40 -left-40 w-80 h-80 rounded-full bg-gradient-to-r from-sky-200 to-cyan-200 opacity-20 blur-3xl"></div>
+          </div>
+          
+          <div className="text-center relative z-10 bg-white/70 backdrop-blur-lg border border-white/20 rounded-2xl shadow-xl p-8">
             <div className="text-red-600 text-6xl mb-4">⚠️</div>
-            <h2 className="text-2xl font-bold text-gray-900 mb-2">Error</h2>
-            <p className="text-gray-600 mb-4">{error}</p>
-            <button 
-              onClick={() => navigate(ROUTES.STUDENT_DASHBOARD)}
-              className="btn-primary mr-4"
-            >
-              Volver al Dashboard
-            </button>
-            <button 
-              onClick={() => window.location.reload()}
-              className="btn-secondary"
-            >
-              Reintentar
-            </button>
+            <h2 className="text-2xl font-bold bg-gradient-to-r from-gray-800 to-gray-600 bg-clip-text text-transparent mb-2">Error</h2>
+            <p className="text-gray-600 mb-6">{error}</p>
+            <div className="space-x-4">
+              <button 
+                onClick={() => navigate(ROUTES.STUDENT_DASHBOARD)}
+                className="px-6 py-3 bg-gradient-to-r from-gray-500 to-gray-600 hover:from-gray-600 hover:to-gray-700 text-white font-semibold rounded-xl shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 transition-all duration-200"
+              >
+                Volver al Dashboard
+              </button>
+              <button 
+                onClick={() => window.location.reload()}
+                className="px-6 py-3 bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-600 hover:to-blue-700 text-white font-semibold rounded-xl shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 transition-all duration-200"
+              >
+                Reintentar
+              </button>
+            </div>
           </div>
         </div>
       </div>
@@ -337,14 +345,20 @@ function WeeklyEvaluation() {
     return (
       <div>
         <Navigation />
-        <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-          <div className="text-center">
+        <div className="min-h-screen bg-gradient-to-br from-cyan-200 via-teal-100 to-sky-50 flex items-center justify-center relative overflow-hidden">
+          {/* Elementos decorativos de fondo */}
+          <div className="absolute inset-0 overflow-hidden">
+            <div className="absolute -top-40 -right-40 w-80 h-80 rounded-full bg-gradient-to-r from-cyan-200 to-blue-200 opacity-20 blur-3xl"></div>
+            <div className="absolute -bottom-40 -left-40 w-80 h-80 rounded-full bg-gradient-to-r from-sky-200 to-cyan-200 opacity-20 blur-3xl"></div>
+          </div>
+          
+          <div className="text-center relative z-10 bg-white/70 backdrop-blur-lg border border-white/20 rounded-2xl shadow-xl p-8">
             <div className="text-yellow-600 text-6xl mb-4">⚠️</div>
-            <h2 className="text-2xl font-bold text-gray-900 mb-2">Datos no disponibles</h2>
-            <p className="text-gray-600 mb-4">No se pudieron cargar las preguntas de evaluación</p>
+            <h2 className="text-2xl font-bold bg-gradient-to-r from-gray-800 to-gray-600 bg-clip-text text-transparent mb-2">Datos no disponibles</h2>
+            <p className="text-gray-600 mb-6">No se pudieron cargar las preguntas de evaluación</p>
             <button 
               onClick={() => navigate(ROUTES.STUDENT_DASHBOARD)}
-              className="btn-primary"
+              className="px-6 py-3 bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-600 hover:to-blue-700 text-white font-semibold rounded-xl shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 transition-all duration-200"
             >
               Volver al Dashboard
             </button>
@@ -358,44 +372,51 @@ function WeeklyEvaluation() {
     <div>
       <Navigation />
       
-      <div className="min-h-screen bg-gray-50">
-        <div className="max-w-4xl mx-auto py-6 px-4 sm:px-6 lg:px-8">
+      <div className="min-h-screen bg-gradient-to-br from-cyan-200 via-teal-100 to-sky-50 relative overflow-hidden">
+        {/* Elementos decorativos de fondo */}
+        <div className="absolute inset-0 overflow-hidden">
+          <div className="absolute -top-40 -right-40 w-80 h-80 rounded-full bg-gradient-to-r from-cyan-200 to-blue-200 opacity-20 blur-3xl"></div>
+          <div className="absolute -bottom-40 -left-40 w-80 h-80 rounded-full bg-gradient-to-r from-sky-200 to-cyan-200 opacity-20 blur-3xl"></div>
+          <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-96 h-96 rounded-full bg-gradient-to-r from-blue-100 to-cyan-100 opacity-10 blur-3xl"></div>
+        </div>
+
+        <div className="max-w-4xl mx-auto py-6 px-4 sm:px-6 lg:px-8 relative z-10">
           {/* Header */}
-          <div className="mb-8">
-            <h1 className="text-3xl font-bold text-gray-900">
+          <div className="mb-8 text-center">
+            <h1 className="text-4xl font-bold bg-gradient-to-r from-gray-800 to-gray-600 bg-clip-text text-transparent mb-4">
               Evaluación Semanal de Bienestar 📝
             </h1>
-            <p className="mt-2 text-gray-600">
+            <p className="text-lg text-gray-600 font-medium">
               Esta evaluación te ayudará a identificar tu nivel actual de estrés y burnout
             </p>
           </div>
 
           {/* Progress bar */}
           <div className="mb-8">
-            <div className="flex items-center justify-between text-sm text-gray-600 mb-2">
+            <div className="flex items-center justify-between text-sm text-gray-600 mb-2 font-medium">
               <span>Progreso de la evaluación</span>
               <span>{currentStep}/3</span>
             </div>
-            <div className="w-full bg-gray-200 rounded-full h-2">
+            <div className="w-full bg-white/30 backdrop-blur-sm rounded-full h-3 border border-white/20 shadow-inner">
               <div 
-                className="bg-blue-600 h-2 rounded-full transition-all duration-300"
+                className="bg-gradient-to-r from-cyan-500 to-blue-600 h-3 rounded-full transition-all duration-500 shadow-lg"
                 style={{ width: `${getProgressPercentage()}%` }}
               ></div>
             </div>
           </div>
 
-          <div className="card">
+          <div className="bg-white/70 backdrop-blur-lg border border-white/20 rounded-2xl shadow-xl p-8">
             {/* Paso 0: Instrucciones */}
             {currentStep === 0 && (
               <div>
-                <h2 className="text-2xl font-bold text-gray-900 mb-6">
+                <h2 className="text-2xl font-bold bg-gradient-to-r from-gray-800 to-gray-600 bg-clip-text text-transparent mb-6">
                   Instrucciones para la Evaluación
                 </h2>
                 
                 <div className="space-y-6">
-                  <div className="bg-blue-50 p-4 rounded-lg">
-                    <h3 className="font-semibold text-blue-800 mb-2">¿Qué vamos a evaluar?</h3>
-                    <ul className="text-blue-700 space-y-1">
+                  <div className="bg-gradient-to-r from-blue-50 to-blue-100 border border-blue-200 p-6 rounded-xl shadow-sm">
+                    <h3 className="font-semibold text-blue-800 mb-3">¿Qué vamos a evaluar?</h3>
+                    <ul className="text-blue-700 space-y-2 font-medium">
                       <li>• <strong>Estrés académico:</strong> Tu nivel de tensión y presión relacionado con los estudios</li>
                       <li>• <strong>Burnout estudiantil:</strong> Tu nivel de agotamiento emocional y desmotivación</li>
                     </ul>
@@ -404,11 +425,11 @@ function WeeklyEvaluation() {
                   {preguntasData.instrucciones && (
                     <div>
                       <h3 className="font-semibold text-gray-900 mb-3">Instrucciones importantes:</h3>
-                      <ul className="space-y-2">
+                      <ul className="space-y-3">
                         {preguntasData.instrucciones.map((instruccion, index) => (
                           <li key={index} className="flex items-start">
-                            <span className="text-blue-600 mr-2">•</span>
-                            <span className="text-gray-700">{instruccion}</span>
+                            <span className="text-cyan-600 mr-3 text-lg">•</span>
+                            <span className="text-gray-700 leading-relaxed">{instruccion}</span>
                           </li>
                         ))}
                       </ul>
@@ -416,22 +437,22 @@ function WeeklyEvaluation() {
                   )}
 
                   {preguntasData.escala && (
-                    <div className="bg-yellow-50 p-4 rounded-lg">
-                      <h3 className="font-semibold text-yellow-800 mb-2">Escala de respuestas:</h3>
-                      <div className="grid grid-cols-1 sm:grid-cols-5 gap-2">
+                    <div className="bg-gradient-to-r from-yellow-50 to-amber-50 border border-yellow-200 p-6 rounded-xl shadow-sm">
+                      <h3 className="font-semibold text-yellow-800 mb-3">Escala de respuestas:</h3>
+                      <div className="grid grid-cols-1 sm:grid-cols-5 gap-3">
                         {preguntasData.escala.opciones?.map((opcion) => (
-                          <div key={opcion.valor} className="text-center p-2 bg-white rounded border">
-                            <div className="font-bold text-gray-900">{opcion.valor}</div>
-                            <div className="text-sm font-medium text-gray-800">{opcion.etiqueta}</div>
-                            <div className="text-xs text-gray-600">{opcion.descripcion}</div>
+                          <div key={opcion.valor} className="text-center p-3 bg-white/70 backdrop-blur-sm rounded-xl border border-white/30 shadow-sm">
+                            <div className="font-bold text-gray-900 text-lg">{opcion.valor}</div>
+                            <div className="text-sm font-semibold text-gray-800">{opcion.etiqueta}</div>
+                            <div className="text-xs text-gray-600 leading-tight">{opcion.descripcion}</div>
                           </div>
                         ))}
                       </div>
                     </div>
                   )}
 
-                  <div className="bg-green-50 p-4 rounded-lg">
-                    <p className="text-green-800">
+                  <div className="bg-gradient-to-r from-green-50 to-emerald-50 border border-green-200 p-6 rounded-xl shadow-sm">
+                    <p className="text-green-800 font-medium">
                       <strong>Tiempo estimado:</strong> 5-10 minutos. 
                       Tómate el tiempo que necesites para responder honestamente.
                     </p>
@@ -443,16 +464,16 @@ function WeeklyEvaluation() {
             {/* Paso 1: Preguntas de Estrés */}
             {currentStep === 1 && preguntasData.categorias.estres && (
               <div>
-                <h2 className="text-2xl font-bold text-gray-900 mb-2">
+                <h2 className="text-2xl font-bold bg-gradient-to-r from-gray-800 to-gray-600 bg-clip-text text-transparent mb-2">
                   {preguntasData.categorias.estres.titulo}
                 </h2>
-                <p className="text-gray-600 mb-6">
+                <p className="text-gray-600 mb-6 font-medium">
                   {preguntasData.categorias.estres.descripcion}
                 </p>
 
                 {/* Indicador de progreso para esta sección */}
-                <div className="mb-6 p-3 bg-blue-50 rounded-lg">
-                  <div className="flex justify-between text-sm text-blue-800">
+                <div className="mb-6 p-4 bg-gradient-to-r from-blue-50 to-blue-100 border border-blue-200 rounded-xl shadow-sm">
+                  <div className="flex justify-between text-sm text-blue-800 font-semibold">
                     <span>Progreso en esta sección:</span>
                     <span>{getCompletedQuestionsCount().estresCompletadas}/{respuestasEstres.length}</span>
                   </div>
@@ -460,22 +481,22 @@ function WeeklyEvaluation() {
 
                 <div className="space-y-6">
                   {preguntasData.categorias.estres.preguntas?.map((pregunta, index) => (
-                    <div key={pregunta.id || index} className="border border-gray-200 rounded-lg p-4">
-                      <h3 className="font-medium text-gray-900 mb-3">
+                    <div key={pregunta.id || index} className="bg-white/50 backdrop-blur-sm border border-white/30 rounded-xl p-6 shadow-sm">
+                      <h3 className="font-semibold text-gray-900 mb-4 text-lg">
                         {index + 1}. {pregunta.texto}
                         {respuestasEstres[index] >= 0 && (
-                          <span className="ml-2 text-green-600">✓</span>
+                          <span className="ml-3 text-green-600 text-xl">✓</span>
                         )}
                       </h3>
                       
-                      <div className="grid grid-cols-5 gap-2">
+                      <div className="grid grid-cols-5 gap-3">
                         {preguntasData.escala?.opciones?.map((opcion) => (
                           <label 
                             key={opcion.valor}
-                            className={`cursor-pointer p-3 text-center border rounded-lg transition-colors ${
+                            className={`cursor-pointer p-4 text-center border-2 rounded-xl transition-all duration-200 hover:shadow-md ${
                               respuestasEstres[index] === opcion.valor
-                                ? 'border-blue-500 bg-blue-50'
-                                : 'border-gray-200 hover:border-gray-300'
+                                ? 'border-cyan-500 bg-gradient-to-r from-cyan-50 to-blue-50 shadow-md transform scale-105'
+                                : 'border-gray-200 bg-white/70 hover:border-gray-300 hover:bg-white/90'
                             }`}
                           >
                             <input
@@ -486,8 +507,8 @@ function WeeklyEvaluation() {
                               onChange={() => handleRespuestaEstres(index, opcion.valor)}
                               className="sr-only"
                             />
-                            <div className="font-bold text-gray-900">{opcion.valor}</div>
-                            <div className="text-xs text-gray-600">{opcion.etiqueta}</div>
+                            <div className="font-bold text-gray-900 text-lg">{opcion.valor}</div>
+                            <div className="text-xs text-gray-600 font-medium">{opcion.etiqueta}</div>
                           </label>
                         ))}
                       </div>
@@ -500,16 +521,16 @@ function WeeklyEvaluation() {
             {/* Paso 2: Preguntas de Burnout */}
             {currentStep === 2 && preguntasData.categorias.burnout && (
               <div>
-                <h2 className="text-2xl font-bold text-gray-900 mb-2">
+                <h2 className="text-2xl font-bold bg-gradient-to-r from-gray-800 to-gray-600 bg-clip-text text-transparent mb-2">
                   {preguntasData.categorias.burnout.titulo}
                 </h2>
-                <p className="text-gray-600 mb-6">
+                <p className="text-gray-600 mb-6 font-medium">
                   {preguntasData.categorias.burnout.descripcion}
                 </p>
 
                 {/* Indicador de progreso para esta sección */}
-                <div className="mb-6 p-3 bg-orange-50 rounded-lg">
-                  <div className="flex justify-between text-sm text-orange-800">
+                <div className="mb-6 p-4 bg-gradient-to-r from-orange-50 to-orange-100 border border-orange-200 rounded-xl shadow-sm">
+                  <div className="flex justify-between text-sm text-orange-800 font-semibold">
                     <span>Progreso en esta sección:</span>
                     <span>{getCompletedQuestionsCount().burnoutCompletadas}/{respuestasBurnout.length}</span>
                   </div>
@@ -517,22 +538,22 @@ function WeeklyEvaluation() {
 
                 <div className="space-y-6">
                   {preguntasData.categorias.burnout.preguntas?.map((pregunta, index) => (
-                    <div key={pregunta.id || index} className="border border-gray-200 rounded-lg p-4">
-                      <h3 className="font-medium text-gray-900 mb-3">
+                    <div key={pregunta.id || index} className="bg-white/50 backdrop-blur-sm border border-white/30 rounded-xl p-6 shadow-sm">
+                      <h3 className="font-semibold text-gray-900 mb-4 text-lg">
                         {index + 1}. {pregunta.texto}
                         {respuestasBurnout[index] >= 0 && (
-                          <span className="ml-2 text-green-600">✓</span>
+                          <span className="ml-3 text-green-600 text-xl">✓</span>
                         )}
                       </h3>
                       
-                      <div className="grid grid-cols-5 gap-2">
+                      <div className="grid grid-cols-5 gap-3">
                         {preguntasData.escala?.opciones?.map((opcion) => (
                           <label 
                             key={opcion.valor}
-                            className={`cursor-pointer p-3 text-center border rounded-lg transition-colors ${
+                            className={`cursor-pointer p-4 text-center border-2 rounded-xl transition-all duration-200 hover:shadow-md ${
                               respuestasBurnout[index] === opcion.valor
-                                ? 'border-blue-500 bg-blue-50'
-                                : 'border-gray-200 hover:border-gray-300'
+                                ? 'border-cyan-500 bg-gradient-to-r from-cyan-50 to-blue-50 shadow-md transform scale-105'
+                                : 'border-gray-200 bg-white/70 hover:border-gray-300 hover:bg-white/90'
                             }`}
                           >
                             <input
@@ -543,8 +564,8 @@ function WeeklyEvaluation() {
                               onChange={() => handleRespuestaBurnout(index, opcion.valor)}
                               className="sr-only"
                             />
-                            <div className="font-bold text-gray-900">{opcion.valor}</div>
-                            <div className="text-xs text-gray-600">{opcion.etiqueta}</div>
+                            <div className="font-bold text-gray-900 text-lg">{opcion.valor}</div>
+                            <div className="text-xs text-gray-600 font-medium">{opcion.etiqueta}</div>
                           </label>
                         ))}
                       </div>
@@ -557,21 +578,21 @@ function WeeklyEvaluation() {
             {/* Paso 3: Resumen antes de enviar */}
             {currentStep === 3 && (
               <div>
-                <h2 className="text-2xl font-bold text-gray-900 mb-6">
+                <h2 className="text-2xl font-bold bg-gradient-to-r from-gray-800 to-gray-600 bg-clip-text text-transparent mb-6">
                   Resumen de tu Evaluación
                 </h2>
 
                 <div className="space-y-6">
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <div className="bg-red-50 p-4 rounded-lg">
-                      <h3 className="font-semibold text-red-800 mb-3">Estrés Académico</h3>
-                      <div className="text-sm text-red-700">
+                    <div className="bg-gradient-to-r from-red-50 to-red-100 border border-red-200 p-6 rounded-xl shadow-sm">
+                      <h3 className="font-semibold text-red-800 mb-4">Estrés Académico</h3>
+                      <div className="text-sm text-red-700 space-y-2">
                         <p><strong>Respuestas completadas:</strong> {getCompletedQuestionsCount().estresCompletadas}/{respuestasEstres.length}</p>
                         <p><strong>Promedio:</strong> {calcularPromedio(respuestasEstres).toFixed(1)}/4</p>
-                        <div className="mt-2">
-                          <div className="w-full bg-red-200 rounded-full h-2">
+                        <div className="mt-3">
+                          <div className="w-full bg-red-200 rounded-full h-3 shadow-inner">
                             <div 
-                              className="bg-red-600 h-2 rounded-full"
+                              className="bg-gradient-to-r from-red-500 to-red-600 h-3 rounded-full transition-all duration-500 shadow-sm"
                               style={{ width: `${(calcularPromedio(respuestasEstres) / 4) * 100}%` }}
                             ></div>
                           </div>
@@ -579,15 +600,15 @@ function WeeklyEvaluation() {
                       </div>
                     </div>
 
-                    <div className="bg-orange-50 p-4 rounded-lg">
-                      <h3 className="font-semibold text-orange-800 mb-3">Burnout Estudiantil</h3>
-                      <div className="text-sm text-orange-700">
+                    <div className="bg-gradient-to-r from-orange-50 to-orange-100 border border-orange-200 p-6 rounded-xl shadow-sm">
+                      <h3 className="font-semibold text-orange-800 mb-4">Burnout Estudiantil</h3>
+                      <div className="text-sm text-orange-700 space-y-2">
                         <p><strong>Respuestas completadas:</strong> {getCompletedQuestionsCount().burnoutCompletadas}/{respuestasBurnout.length}</p>
                         <p><strong>Promedio:</strong> {calcularPromedio(respuestasBurnout).toFixed(1)}/4</p>
-                        <div className="mt-2">
-                          <div className="w-full bg-orange-200 rounded-full h-2">
+                        <div className="mt-3">
+                          <div className="w-full bg-orange-200 rounded-full h-3 shadow-inner">
                             <div 
-                              className="bg-orange-600 h-2 rounded-full"
+                              className="bg-gradient-to-r from-orange-500 to-orange-600 h-3 rounded-full transition-all duration-500 shadow-sm"
                               style={{ width: `${(calcularPromedio(respuestasBurnout) / 4) * 100}%` }}
                             ></div>
                           </div>
@@ -596,9 +617,9 @@ function WeeklyEvaluation() {
                     </div>
                   </div>
 
-                  <div className="bg-blue-50 p-4 rounded-lg">
-                    <h3 className="font-semibold text-blue-800 mb-2">¿Qué sucede después?</h3>
-                    <ul className="text-blue-700 space-y-1 text-sm">
+                  <div className="bg-gradient-to-r from-blue-50 to-blue-100 border border-blue-200 p-6 rounded-xl shadow-sm">
+                    <h3 className="font-semibold text-blue-800 mb-3">¿Qué sucede después?</h3>
+                    <ul className="text-blue-700 space-y-2 text-sm font-medium">
                       <li>• Analizaremos tus respuestas para calcular tu nivel de riesgo</li>
                       <li>• Recibirás recomendaciones personalizadas en tu dashboard</li>
                       <li>• Si detectamos riesgo alto, se generará una alerta para el equipo de apoyo</li>
@@ -606,17 +627,17 @@ function WeeklyEvaluation() {
                     </ul>
                   </div>
 
-                  <div className="bg-green-50 p-4 rounded-lg">
-                    <p className="text-green-800 text-center">
-                      <strong>¡Gracias por tu honestidad!</strong> 
+                  <div className="bg-gradient-to-r from-green-50 to-emerald-50 border border-green-200 p-6 rounded-xl shadow-sm">
+                    <p className="text-green-800 text-center font-semibold">
+                      ¡Gracias por tu honestidad! 
                       Tu bienestar es importante para nosotros.
                     </p>
                   </div>
 
                   {/* Indicador de estado de la evaluación */}
-                  <div className={`p-4 rounded-lg ${validarEvaluacionCompleta() ? 'bg-green-50 border-green-200' : 'bg-yellow-50 border-yellow-200'} border`}>
+                  <div className={`p-6 rounded-xl border-2 shadow-sm ${validarEvaluacionCompleta() ? 'bg-gradient-to-r from-green-50 to-emerald-50 border-green-300' : 'bg-gradient-to-r from-yellow-50 to-amber-50 border-yellow-300'}`}>
                     <div className="flex items-center">
-                      <span className="text-2xl mr-3">
+                      <span className="text-3xl mr-4">
                         {validarEvaluacionCompleta() ? '✅' : '⚠️'}
                       </span>
                       <div>
@@ -627,7 +648,7 @@ function WeeklyEvaluation() {
                           }
                         </p>
                         {!validarEvaluacionCompleta() && (
-                          <p className="text-yellow-700 text-sm mt-1">
+                          <p className="text-yellow-700 text-sm mt-1 font-medium">
                             Asegúrate de haber respondido todas las preguntas antes de enviar.
                           </p>
                         )}
@@ -640,23 +661,23 @@ function WeeklyEvaluation() {
 
             {/* Mostrar error si existe */}
             {error && (
-              <div className="mt-4 p-4 bg-red-50 border-l-4 border-red-400 rounded">
+              <div className="mt-6 p-4 bg-gradient-to-r from-red-50 to-red-100 border-l-4 border-red-400 rounded-xl shadow-sm">
                 <div className="flex">
                   <div className="flex-shrink-0">
                     <span className="text-red-400 text-xl">⚠️</span>
                   </div>
                   <div className="ml-3">
-                    <p className="text-red-700">{error}</p>
+                    <p className="text-red-700 font-medium">{error}</p>
                   </div>
                 </div>
               </div>
             )}
 
             {/* Botones de navegación */}
-            <div className="flex justify-between mt-8 pt-6 border-t border-gray-200">
+            <div className="flex justify-between mt-8 pt-6 border-t border-white/30">
               <button
                 onClick={currentStep === 0 ? () => navigate(ROUTES.STUDENT_DASHBOARD) : handlePrevious}
-                className="btn-secondary"
+                className="px-6 py-3 text-gray-700 bg-white/70 border-2 border-gray-300 rounded-xl hover:bg-white/90 hover:border-gray-400 font-semibold transition-all duration-200 shadow-sm hover:shadow-md"
                 disabled={isSubmitting}
               >
                 {currentStep === 0 ? 'Cancelar' : 'Anterior'}
@@ -666,7 +687,7 @@ function WeeklyEvaluation() {
                 <button
                   onClick={handleNext}
                   disabled={!canProceedToNext()}
-                  className="btn-primary disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="px-6 py-3 bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-600 hover:to-blue-700 disabled:opacity-50 disabled:cursor-not-allowed text-white font-semibold rounded-xl shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 transition-all duration-200"
                   title={!canProceedToNext() ? 'Completa todas las preguntas para continuar' : ''}
                 >
                   {currentStep === 0 ? 'Comenzar Evaluación' : 'Siguiente'}
@@ -675,12 +696,12 @@ function WeeklyEvaluation() {
                 <button
                   onClick={handleSubmit}
                   disabled={isSubmitting || !canProceedToNext()}
-                  className="btn-success disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="px-6 py-3 bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 disabled:opacity-50 disabled:cursor-not-allowed text-white font-semibold rounded-xl shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 transition-all duration-200"
                   title={!canProceedToNext() ? 'Completa todas las preguntas para enviar' : ''}
                 >
                   {isSubmitting ? (
                     <div className="flex items-center">
-                      <div className="spinner h-4 w-4 mr-2" />
+                      <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2" />
                       Enviando...
                     </div>
                   ) : (

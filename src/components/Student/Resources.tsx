@@ -66,11 +66,11 @@ function Resources() {
 
   const getColorCategoria = (categoria: string) => {
     const colores = {
-      'Manejo del Estrés': 'bg-red-50 text-red-700 border-red-200',
-      'Productividad': 'bg-blue-50 text-blue-700 border-blue-200',
-      'Bienestar Mental': 'bg-green-50 text-green-700 border-green-200',
-      'Relajación': 'bg-purple-50 text-purple-700 border-purple-200',
-      'default': 'bg-gray-50 text-gray-700 border-gray-200'
+      'Manejo del Estrés': 'bg-gradient-to-r from-red-50 to-red-100 text-red-700 border-red-200',
+      'Productividad': 'bg-gradient-to-r from-blue-50 to-blue-100 text-blue-700 border-blue-200',
+      'Bienestar Mental': 'bg-gradient-to-r from-green-50 to-green-100 text-green-700 border-green-200',
+      'Relajación': 'bg-gradient-to-r from-purple-50 to-purple-100 text-purple-700 border-purple-200',
+      'default': 'bg-gradient-to-r from-gray-50 to-gray-100 text-gray-700 border-gray-200'
     };
     return colores[categoria as keyof typeof colores] || colores.default;
   };
@@ -88,14 +88,20 @@ function Resources() {
     return (
       <div>
         <Navigation />
-        <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-          <div className="text-center">
+        <div className="min-h-screen bg-gradient-to-br from-cyan-200 via-teal-100 to-sky-50 flex items-center justify-center relative overflow-hidden">
+          {/* Elementos decorativos de fondo */}
+          <div className="absolute inset-0 overflow-hidden">
+            <div className="absolute -top-40 -right-40 w-80 h-80 rounded-full bg-gradient-to-r from-cyan-200 to-blue-200 opacity-20 blur-3xl"></div>
+            <div className="absolute -bottom-40 -left-40 w-80 h-80 rounded-full bg-gradient-to-r from-sky-200 to-cyan-200 opacity-20 blur-3xl"></div>
+          </div>
+          
+          <div className="text-center relative z-10 bg-white/70 backdrop-blur-lg border border-white/20 rounded-2xl shadow-xl p-8">
             <div className="text-red-600 text-6xl mb-4">📚</div>
-            <h2 className="text-2xl font-bold text-gray-900 mb-2">Error al cargar recursos</h2>
-            <p className="text-gray-600 mb-4">{error}</p>
+            <h2 className="text-2xl font-bold bg-gradient-to-r from-gray-800 to-gray-600 bg-clip-text text-transparent mb-2">Error al cargar recursos</h2>
+            <p className="text-gray-600 mb-6">{error}</p>
             <button 
               onClick={() => window.location.reload()}
-              className="btn-primary"
+              className="px-6 py-3 bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-600 hover:to-blue-700 text-white font-semibold rounded-xl shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 transition-all duration-200"
             >
               Reintentar
             </button>
@@ -111,31 +117,38 @@ function Resources() {
     <div>
       <Navigation />
       
-      <div className="min-h-screen bg-gray-50">
-        <div className="max-w-7xl mx-auto py-6 px-4 sm:px-6 lg:px-8">
+      <div className="min-h-screen bg-gradient-to-br from-cyan-200 via-teal-100 to-sky-50 relative overflow-hidden">
+        {/* Elementos decorativos de fondo */}
+        <div className="absolute inset-0 overflow-hidden">
+          <div className="absolute -top-40 -right-40 w-80 h-80 rounded-full bg-gradient-to-r from-cyan-200 to-blue-200 opacity-20 blur-3xl"></div>
+          <div className="absolute -bottom-40 -left-40 w-80 h-80 rounded-full bg-gradient-to-r from-sky-200 to-cyan-200 opacity-20 blur-3xl"></div>
+          <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-96 h-96 rounded-full bg-gradient-to-r from-blue-100 to-cyan-100 opacity-10 blur-3xl"></div>
+        </div>
+
+        <div className="max-w-7xl mx-auto py-6 px-4 sm:px-6 lg:px-8 relative z-10">
           {/* Header */}
-          <div className="mb-8">
-            <h1 className="text-3xl font-bold text-gray-900">
+          <div className="mb-8 text-center">
+            <h1 className="text-4xl font-bold bg-gradient-to-r from-gray-800 to-gray-600 bg-clip-text text-transparent mb-4">
               Recursos Educativos 📚
             </h1>
-            <p className="mt-2 text-gray-600">
+            <p className="text-lg text-gray-600 font-medium">
               Herramientas y contenido para mejorar tu bienestar académico y personal
             </p>
           </div>
 
           {/* Filtros */}
-          <div className="card mb-8">
+          <div className="bg-white/70 backdrop-blur-lg border border-white/20 rounded-2xl shadow-xl p-6 mb-8">
             <div className="flex flex-col md:flex-row md:items-center md:justify-between space-y-4 md:space-y-0">
               <div className="flex flex-col sm:flex-row space-y-2 sm:space-y-0 sm:space-x-4">
                 <div>
-                  <label htmlFor="categoria" className="block text-sm font-medium text-gray-700 mb-1">
+                  <label htmlFor="categoria" className="block text-sm font-semibold text-gray-700 mb-2">
                     Categoría
                   </label>
                   <select
                     id="categoria"
                     value={filtroCategoria}
                     onChange={(e) => setFiltroCategoria(e.target.value)}
-                    className="input-field min-w-40"
+                    className="min-w-40 px-4 py-3 border-2 border-gray-200 rounded-xl bg-white/50 backdrop-blur-sm shadow-sm transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-transparent hover:bg-white/70"
                   >
                     <option value="todas">Todas las categorías</option>
                     {categorias.map(categoria => (
@@ -145,14 +158,14 @@ function Resources() {
                 </div>
 
                 <div>
-                  <label htmlFor="tipo" className="block text-sm font-medium text-gray-700 mb-1">
+                  <label htmlFor="tipo" className="block text-sm font-semibold text-gray-700 mb-2">
                     Tipo de Recurso
                   </label>
                   <select
                     id="tipo"
                     value={filtroTipo}
                     onChange={(e) => setFiltroTipo(e.target.value)}
-                    className="input-field min-w-40"
+                    className="min-w-40 px-4 py-3 border-2 border-gray-200 rounded-xl bg-white/50 backdrop-blur-sm shadow-sm transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-transparent hover:bg-white/70"
                   >
                     <option value="todos">Todos los tipos</option>
                     <option value="video">Videos</option>
@@ -163,7 +176,7 @@ function Resources() {
                 </div>
               </div>
 
-              <div className="text-sm text-gray-600">
+              <div className="text-sm text-gray-600 font-medium">
                 {Object.values(recursosMostrar).reduce((total, items) => total + items.length, 0)} recursos encontrados
               </div>
             </div>
@@ -175,7 +188,7 @@ function Resources() {
               {Object.entries(recursosMostrar).map(([categoria, items]) => (
                 <div key={categoria}>
                   <h2 className="text-2xl font-bold text-gray-900 mb-4 flex items-center">
-                    <span className={`inline-block px-3 py-1 rounded-full text-sm font-medium border ${getColorCategoria(categoria)} mr-3`}>
+                    <span className={`inline-block px-4 py-2 rounded-full text-sm font-bold border shadow-sm ${getColorCategoria(categoria)} mr-3`}>
                       {categoria}
                     </span>
                     <span className="text-sm font-normal text-gray-500">
@@ -185,7 +198,7 @@ function Resources() {
 
                   <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                     {items.map((recurso) => (
-                      <div key={recurso.id} className="card hover:shadow-lg transition-shadow duration-200">
+                      <div key={recurso.id} className="bg-white/70 backdrop-blur-lg border border-white/20 rounded-2xl shadow-lg hover:shadow-xl transition-all duration-200 p-6 hover:-translate-y-1">
                         <div className="flex items-start space-x-3 mb-4">
                           <div className="text-3xl">
                             {getIconoTipo(recurso.tipoRecurso)}
@@ -195,11 +208,11 @@ function Resources() {
                               <h3 className="font-semibold text-gray-900 text-sm">
                                 {recurso.titulo}
                               </h3>
-                              <span className={`px-2 py-1 text-xs rounded-full font-medium ${
-                                recurso.tipoRecurso === 'VIDEO' ? 'bg-red-100 text-red-700' :
-                                recurso.tipoRecurso === 'ARTICULO' ? 'bg-blue-100 text-blue-700' :
-                                recurso.tipoRecurso === 'EJERCICIO' ? 'bg-green-100 text-green-700' :
-                                'bg-purple-100 text-purple-700'
+                              <span className={`px-3 py-1 text-xs rounded-full font-bold shadow-sm ${
+                                recurso.tipoRecurso === 'VIDEO' ? 'bg-gradient-to-r from-red-100 to-red-200 text-red-700' :
+                                recurso.tipoRecurso === 'ARTICULO' ? 'bg-gradient-to-r from-blue-100 to-blue-200 text-blue-700' :
+                                recurso.tipoRecurso === 'EJERCICIO' ? 'bg-gradient-to-r from-green-100 to-green-200 text-green-700' :
+                                'bg-gradient-to-r from-purple-100 to-purple-200 text-purple-700'
                               }`}>
                                 {recurso.tipoRecurso.toLowerCase()}
                               </span>
@@ -208,7 +221,7 @@ function Resources() {
                         </div>
 
                         {recurso.descripcion && (
-                          <p className="text-gray-600 text-sm mb-4 line-clamp-3">
+                          <p className="text-gray-600 text-sm mb-4 line-clamp-3 leading-relaxed">
                             {recurso.descripcion}
                           </p>
                         )}
@@ -217,7 +230,7 @@ function Resources() {
                           {recurso.urlContenido ? (
                             <button 
                               onClick={() => window.open(recurso.urlContenido, '_blank')}
-                              className="btn-primary text-sm"
+                              className="px-4 py-2 bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-600 hover:to-blue-700 text-white font-semibold rounded-xl shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 transition-all duration-200 text-sm"
                             >
                               {recurso.tipoRecurso === 'VIDEO' ? 'Ver Video' :
                                recurso.tipoRecurso === 'ARTICULO' ? 'Leer Artículo' :
@@ -225,10 +238,10 @@ function Resources() {
                                'Ver Técnica'}
                             </button>
                           ) : (
-                            <span className="text-gray-400 text-sm">Próximamente disponible</span>
+                            <span className="text-gray-400 text-sm font-medium">Próximamente disponible</span>
                           )}
 
-                          <button className="text-gray-400 hover:text-gray-600 transition-colors">
+                          <button className="text-gray-400 hover:text-gray-600 transition-all duration-200 p-2 rounded-lg hover:bg-white/50">
                             <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
                             </svg>
@@ -241,44 +254,46 @@ function Resources() {
               ))}
             </div>
           ) : (
-            <div className="text-center py-12">
-              <div className="text-gray-400 text-6xl mb-4">🔍</div>
-              <h3 className="text-lg font-medium text-gray-900 mb-2">
-                No se encontraron recursos
-              </h3>
-              <p className="text-gray-600">
-                Intenta cambiar los filtros para ver más contenido
-              </p>
+            <div className="text-center py-16">
+              <div className="bg-white/70 backdrop-blur-lg border border-white/20 rounded-2xl shadow-xl p-8 inline-block">
+                <div className="text-gray-400 text-6xl mb-4">🔍</div>
+                <h3 className="text-xl font-semibold bg-gradient-to-r from-gray-700 to-gray-500 bg-clip-text text-transparent mb-3">
+                  No se encontraron recursos
+                </h3>
+                <p className="text-gray-600 font-medium">
+                  Intenta cambiar los filtros para ver más contenido
+                </p>
+              </div>
             </div>
           )}
 
           {/* Información adicional */}
-          <div className="mt-12 card">
-            <h2 className="text-xl font-semibold text-gray-900 mb-4">
+          <div className="mt-12 bg-white/70 backdrop-blur-lg border border-white/20 rounded-2xl shadow-xl p-6">
+            <h2 className="text-xl font-semibold bg-gradient-to-r from-gray-800 to-gray-600 bg-clip-text text-transparent mb-4">
               💡 ¿Cómo usar estos recursos?
             </h2>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div>
-                <h3 className="font-medium text-gray-900 mb-2">📺 Videos</h3>
-                <p className="text-gray-600 text-sm">
+                <h3 className="font-semibold text-gray-900 mb-2">📺 Videos</h3>
+                <p className="text-gray-600 text-sm leading-relaxed">
                   Contenido visual para aprender técnicas de relajación, manejo del tiempo y bienestar mental.
                 </p>
               </div>
               <div>
-                <h3 className="font-medium text-gray-900 mb-2">📄 Artículos</h3>
-                <p className="text-gray-600 text-sm">
+                <h3 className="font-semibold text-gray-900 mb-2">📄 Artículos</h3>
+                <p className="text-gray-600 text-sm leading-relaxed">
                   Guías detalladas con información basada en evidencia sobre temas de salud mental estudiantil.
                 </p>
               </div>
               <div>
-                <h3 className="font-medium text-gray-900 mb-2">🏃‍♂️ Ejercicios</h3>
-                <p className="text-gray-600 text-sm">
+                <h3 className="font-semibold text-gray-900 mb-2">🏃‍♂️ Ejercicios</h3>
+                <p className="text-gray-600 text-sm leading-relaxed">
                   Actividades prácticas para reducir el estrés, mejorar la concentración y mantener el bienestar.
                 </p>
               </div>
               <div>
-                <h3 className="font-medium text-gray-900 mb-2">🧠 Técnicas</h3>
-                <p className="text-gray-600 text-sm">
+                <h3 className="font-semibold text-gray-900 mb-2">🧠 Técnicas</h3>
+                <p className="text-gray-600 text-sm leading-relaxed">
                   Métodos específicos y paso a paso para manejar situaciones de estrés y ansiedad académica.
                 </p>
               </div>
@@ -286,15 +301,15 @@ function Resources() {
           </div>
 
           {/* Call to action */}
-          <div className="mt-8 card bg-blue-50">
+          <div className="mt-8 bg-gradient-to-r from-blue-50 to-cyan-50 border border-blue-200 rounded-2xl shadow-lg p-6">
             <div className="text-center">
               <h2 className="text-xl font-semibold text-blue-900 mb-2">
                 ¿Necesitas más ayuda personalizada?
               </h2>
-              <p className="text-blue-700 mb-4">
+              <p className="text-blue-700 mb-4 font-medium">
                 Nuestro equipo de bienestar estudiantil está aquí para apoyarte
               </p>
-              <button className="btn-primary bg-blue-600 hover:bg-blue-700">
+              <button className="px-6 py-3 bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white font-semibold rounded-xl shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 transition-all duration-200">
                 Contactar Bienestar Estudiantil
               </button>
             </div>

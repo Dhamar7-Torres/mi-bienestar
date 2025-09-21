@@ -148,14 +148,20 @@ function StudentsList() {
     return (
       <div>
         <Navigation />
-        <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-          <div className="text-center">
+        <div className="min-h-screen bg-gradient-to-br from-cyan-200 via-teal-100 to-sky-50 flex items-center justify-center relative overflow-hidden">
+          {/* Elementos decorativos de fondo */}
+          <div className="absolute inset-0 overflow-hidden">
+            <div className="absolute -top-40 -right-40 w-80 h-80 rounded-full bg-gradient-to-r from-cyan-200 to-blue-200 opacity-20 blur-3xl"></div>
+            <div className="absolute -bottom-40 -left-40 w-80 h-80 rounded-full bg-gradient-to-r from-sky-200 to-cyan-200 opacity-20 blur-3xl"></div>
+          </div>
+          
+          <div className="text-center relative z-10 bg-white/70 backdrop-blur-lg border border-white/20 rounded-2xl shadow-xl p-8">
             <div className="text-red-600 text-6xl mb-4">⚠️</div>
-            <h2 className="text-2xl font-bold text-gray-900 mb-2">Error al cargar</h2>
-            <p className="text-gray-600 mb-4">{error}</p>
+            <h2 className="text-2xl font-bold bg-gradient-to-r from-gray-800 to-gray-600 bg-clip-text text-transparent mb-2">Error al cargar</h2>
+            <p className="text-gray-600 mb-6">{error}</p>
             <button 
               onClick={fetchStudents}
-              className="btn-primary"
+              className="px-6 py-3 bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-600 hover:to-blue-700 text-white font-semibold rounded-xl shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 transition-all duration-200"
             >
               Reintentar
             </button>
@@ -171,24 +177,31 @@ function StudentsList() {
     <div>
       <Navigation />
       
-      <div className="min-h-screen bg-gray-50">
-        <div className="max-w-7xl mx-auto py-6 px-4 sm:px-6 lg:px-8">
+      <div className="min-h-screen bg-gradient-to-br from-cyan-200 via-teal-100 to-sky-50 relative overflow-hidden">
+        {/* Elementos decorativos de fondo */}
+        <div className="absolute inset-0 overflow-hidden">
+          <div className="absolute -top-40 -right-40 w-80 h-80 rounded-full bg-gradient-to-r from-cyan-200 to-blue-200 opacity-20 blur-3xl"></div>
+          <div className="absolute -bottom-40 -left-40 w-80 h-80 rounded-full bg-gradient-to-r from-sky-200 to-cyan-200 opacity-20 blur-3xl"></div>
+          <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-96 h-96 rounded-full bg-gradient-to-r from-blue-100 to-cyan-100 opacity-10 blur-3xl"></div>
+        </div>
+
+        <div className="max-w-7xl mx-auto py-6 px-4 sm:px-6 lg:px-8 relative z-10">
           {/* Header */}
-          <div className="mb-8">
-            <h1 className="text-3xl font-bold text-gray-900">
+          <div className="mb-8 text-center">
+            <h1 className="text-4xl font-bold bg-gradient-to-r from-gray-800 to-gray-600 bg-clip-text text-transparent mb-4">
               Gestión de Estudiantes 👥
             </h1>
-            <p className="mt-2 text-gray-600">
+            <p className="text-lg text-gray-600 font-medium">
               Monitor y gestiona el bienestar de todos los estudiantes registrados
             </p>
           </div>
 
           {/* Filtros y controles */}
-          <div className="card mb-6">
+          <div className="bg-white/70 backdrop-blur-lg border border-white/20 rounded-2xl shadow-xl p-6 mb-6">
             <div className="grid grid-cols-1 lg:grid-cols-4 gap-4 mb-4">
               {/* Búsqueda */}
               <div className="lg:col-span-2">
-                <label htmlFor="busqueda" className="block text-sm font-medium text-gray-700 mb-1">
+                <label htmlFor="busqueda" className="block text-sm font-semibold text-gray-700 mb-2">
                   Buscar estudiante
                 </label>
                 <div className="relative">
@@ -197,7 +210,7 @@ function StudentsList() {
                     id="busqueda"
                     value={busqueda}
                     onChange={(e) => handleFiltroChange({ busqueda: e.target.value })}
-                    className="input-field pl-10"
+                    className="w-full pl-10 pr-4 py-3 border-2 border-gray-200 rounded-xl bg-white/50 backdrop-blur-sm shadow-sm transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-transparent hover:bg-white/70"
                     placeholder="Nombre o correo del estudiante..."
                   />
                   <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
@@ -210,14 +223,14 @@ function StudentsList() {
 
               {/* Filtro por riesgo */}
               <div>
-                <label htmlFor="filtroRiesgo" className="block text-sm font-medium text-gray-700 mb-1">
+                <label htmlFor="filtroRiesgo" className="block text-sm font-semibold text-gray-700 mb-2">
                   Nivel de riesgo
                 </label>
                 <select
                   id="filtroRiesgo"
                   value={filtroRiesgo}
                   onChange={(e) => handleFiltroChange({ filtroRiesgo: e.target.value })}
-                  className="input-field"
+                  className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl bg-white/50 backdrop-blur-sm shadow-sm transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-transparent hover:bg-white/70"
                 >
                   <option value="">Todos los niveles</option>
                   <option value="ALTO">Alto</option>
@@ -228,7 +241,7 @@ function StudentsList() {
 
               {/* Filtro por carrera */}
               <div>
-                <label htmlFor="filtroCarrera" className="block text-sm font-medium text-gray-700 mb-1">
+                <label htmlFor="filtroCarrera" className="block text-sm font-semibold text-gray-700 mb-2">
                   Carrera
                 </label>
                 <input
@@ -236,24 +249,24 @@ function StudentsList() {
                   id="filtroCarrera"
                   value={filtroCarrera}
                   onChange={(e) => handleFiltroChange({ filtroCarrera: e.target.value })}
-                  className="input-field"
+                  className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl bg-white/50 backdrop-blur-sm shadow-sm transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-transparent hover:bg-white/70"
                   placeholder="Filtrar por carrera..."
                 />
               </div>
             </div>
 
             {/* Controles adicionales */}
-            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between space-y-2 sm:space-y-0">
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between space-y-2 sm:space-y-0 pt-4 border-t border-white/30">
               <div className="flex items-center space-x-4">
                 <div className="flex items-center space-x-2">
-                  <label htmlFor="ordenarPor" className="text-sm font-medium text-gray-700">
+                  <label htmlFor="ordenarPor" className="text-sm font-semibold text-gray-700">
                     Ordenar por:
                   </label>
                   <select
                     id="ordenarPor"
                     value={ordenarPor}
                     onChange={(e) => handleFiltroChange({ ordenarPor: e.target.value })}
-                    className="input-field text-sm"
+                    className="px-3 py-2 text-sm border-2 border-gray-200 rounded-lg bg-white/50 backdrop-blur-sm shadow-sm transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-transparent hover:bg-white/70"
                   >
                     <option value="nombreCompleto">Nombre</option>
                     <option value="carrera">Carrera</option>
@@ -262,7 +275,7 @@ function StudentsList() {
                   </select>
                   <button
                     onClick={() => handleFiltroChange({ orden: orden === 'asc' ? 'desc' : 'asc' })}
-                    className="text-gray-500 hover:text-gray-700"
+                    className="text-gray-500 hover:text-gray-700 p-2 rounded-lg hover:bg-white/50 transition-all duration-200"
                   >
                     {orden === 'asc' ? '↑' : '↓'}
                   </button>
@@ -270,19 +283,19 @@ function StudentsList() {
 
                 <button
                   onClick={limpiarFiltros}
-                  className="text-blue-600 hover:text-blue-700 text-sm font-medium"
+                  className="text-transparent bg-gradient-to-r from-blue-600 to-cyan-600 bg-clip-text hover:from-blue-700 hover:to-cyan-700 text-sm font-semibold transition-all duration-200"
                 >
                   Limpiar filtros
                 </button>
               </div>
 
-              <div className="flex items-center space-x-2">
-                <span className="text-sm text-gray-600">
+              <div className="flex items-center space-x-4">
+                <span className="text-sm text-gray-600 font-medium">
                   {studentsData.paginacion.total} estudiante{studentsData.paginacion.total !== 1 ? 's' : ''}
                 </span>
                 <button
                   onClick={exportarDatos}
-                  className="btn-secondary text-sm"
+                  className="px-4 py-2 text-sm font-semibold text-gray-700 bg-white/70 border-2 border-gray-300 rounded-xl hover:bg-white/90 hover:border-gray-400 transition-all duration-200 shadow-sm hover:shadow-md"
                 >
                   Exportar
                 </button>
@@ -292,78 +305,78 @@ function StudentsList() {
 
           {/* Lista de estudiantes */}
           {studentsData.estudiantes.length > 0 ? (
-            <div className="card">
+            <div className="bg-white/70 backdrop-blur-lg border border-white/20 rounded-2xl shadow-xl overflow-hidden">
               <div className="overflow-x-auto">
-                <table className="min-w-full divide-y divide-gray-200">
-                  <thead className="bg-gray-50">
+                <table className="min-w-full divide-y divide-white/30">
+                  <thead className="bg-white/50">
                     <tr>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      <th className="px-6 py-3 text-left text-xs font-bold text-gray-700 uppercase tracking-wider">
                         Estudiante
                       </th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      <th className="px-6 py-3 text-left text-xs font-bold text-gray-700 uppercase tracking-wider">
                         Carrera
                       </th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      <th className="px-6 py-3 text-left text-xs font-bold text-gray-700 uppercase tracking-wider">
                         Riesgo
                       </th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      <th className="px-6 py-3 text-left text-xs font-bold text-gray-700 uppercase tracking-wider">
                         Niveles
                       </th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      <th className="px-6 py-3 text-left text-xs font-bold text-gray-700 uppercase tracking-wider">
                         Última Evaluación
                       </th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      <th className="px-6 py-3 text-left text-xs font-bold text-gray-700 uppercase tracking-wider">
                         Alertas
                       </th>
-                      <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      <th className="px-6 py-3 text-right text-xs font-bold text-gray-700 uppercase tracking-wider">
                         Acciones
                       </th>
                     </tr>
                   </thead>
-                  <tbody className="bg-white divide-y divide-gray-200">
+                  <tbody className="bg-white/30 divide-y divide-white/30">
                     {studentsData.estudiantes.map((estudiante) => {
                       const riskColors = getRiskColor(estudiante.estadoRiesgo);
                       return (
-                        <tr key={estudiante.id} className="hover:bg-gray-50">
+                        <tr key={estudiante.id} className="hover:bg-white/50 transition-all duration-200">
                           <td className="px-6 py-4 whitespace-nowrap">
                             <div>
-                              <div className="text-sm font-medium text-gray-900">
+                              <div className="text-sm font-semibold text-gray-900">
                                 {estudiante.nombreCompleto}
                               </div>
-                              <div className="text-sm text-gray-500">
+                              <div className="text-sm text-gray-600 font-medium">
                                 {estudiante.correo}
                               </div>
                             </div>
                           </td>
                           <td className="px-6 py-4 whitespace-nowrap">
-                            <div className="text-sm text-gray-900">{estudiante.carrera}</div>
-                            <div className="text-sm text-gray-500">{estudiante.semestre}° Sem</div>
+                            <div className="text-sm font-semibold text-gray-900">{estudiante.carrera}</div>
+                            <div className="text-sm text-gray-600 font-medium">{estudiante.semestre}° Sem</div>
                           </td>
                           <td className="px-6 py-4 whitespace-nowrap">
-                            <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${riskColors.bg} ${riskColors.text}`}>
+                            <span className={`inline-flex px-3 py-1 text-xs font-bold rounded-full ${riskColors.bg} ${riskColors.text} shadow-sm`}>
                               {estudiante.estadoRiesgo}
                             </span>
                           </td>
-                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                          <td className="px-6 py-4 whitespace-nowrap text-sm font-semibold text-gray-900">
                             <div>E: {estudiante.nivelEstres}/10</div>
                             <div>B: {estudiante.nivelBurnout}/10</div>
                           </td>
-                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600 font-medium">
                             {formatearFecha(estudiante.ultimaEvaluacion)}
                           </td>
                           <td className="px-6 py-4 whitespace-nowrap">
                             {estudiante.alertasActivas > 0 ? (
-                              <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-red-100 text-red-800">
+                              <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-bold bg-gradient-to-r from-red-100 to-red-200 text-red-800 shadow-sm">
                                 {estudiante.alertasActivas} activa{estudiante.alertasActivas > 1 ? 's' : ''}
                               </span>
                             ) : (
-                              <span className="text-gray-400 text-xs">Sin alertas</span>
+                              <span className="text-gray-400 text-xs font-medium">Sin alertas</span>
                             )}
                           </td>
                           <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium space-x-2">
                             <Link
                               to={`${ROUTES.COORDINATOR_STUDENTS}/${estudiante.id}`}
-                              className="text-blue-600 hover:text-blue-900"
+                              className="text-transparent bg-gradient-to-r from-blue-600 to-cyan-600 bg-clip-text hover:from-blue-700 hover:to-cyan-700 font-semibold transition-all duration-200"
                             >
                               Ver detalles
                             </Link>
@@ -377,31 +390,31 @@ function StudentsList() {
 
               {/* Paginación */}
               {studentsData.paginacion.totalPaginas > 1 && (
-                <div className="bg-gray-50 px-6 py-3 border-t border-gray-200">
+                <div className="bg-white/50 px-6 py-3 border-t border-white/30">
                   <div className="flex items-center justify-between">
-                    <div className="text-sm text-gray-500">
+                    <div className="text-sm text-gray-600 font-medium">
                       Mostrando {((studentsData.paginacion.pagina - 1) * studentsData.paginacion.limite) + 1} a{' '}
                       {Math.min(studentsData.paginacion.pagina * studentsData.paginacion.limite, studentsData.paginacion.total)} de{' '}
                       {studentsData.paginacion.total} estudiantes
                     </div>
                     
-                    <div className="flex items-center space-x-2">
+                    <div className="flex items-center space-x-3">
                       <button
                         onClick={() => setPaginaActual(Math.max(1, paginaActual - 1))}
                         disabled={paginaActual === 1}
-                        className="px-3 py-1 text-sm font-medium text-gray-500 bg-white border border-gray-300 rounded-md hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                        className="px-4 py-2 text-sm font-semibold text-gray-700 bg-white/70 border-2 border-gray-300 rounded-xl hover:bg-white/90 hover:border-gray-400 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 shadow-sm hover:shadow-md"
                       >
                         Anterior
                       </button>
                       
-                      <span className="px-3 py-1 text-sm text-gray-700">
+                      <span className="px-4 py-2 text-sm font-semibold text-gray-700 bg-gradient-to-r from-cyan-50 to-blue-50 rounded-xl border-2 border-cyan-200">
                         Página {paginaActual} de {studentsData.paginacion.totalPaginas}
                       </span>
                       
                       <button
                         onClick={() => setPaginaActual(Math.min(studentsData.paginacion.totalPaginas, paginaActual + 1))}
                         disabled={paginaActual === studentsData.paginacion.totalPaginas}
-                        className="px-3 py-1 text-sm font-medium text-gray-500 bg-white border border-gray-300 rounded-md hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                        className="px-4 py-2 text-sm font-semibold text-gray-700 bg-white/70 border-2 border-gray-300 rounded-xl hover:bg-white/90 hover:border-gray-400 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 shadow-sm hover:shadow-md"
                       >
                         Siguiente
                       </button>
@@ -411,14 +424,16 @@ function StudentsList() {
               )}
             </div>
           ) : (
-            <div className="text-center py-12">
-              <div className="text-gray-400 text-6xl mb-4">🔍</div>
-              <h3 className="text-lg font-medium text-gray-900 mb-2">
-                No se encontraron estudiantes
-              </h3>
-              <p className="text-gray-600">
-                Intenta cambiar los filtros de búsqueda
-              </p>
+            <div className="text-center py-16">
+              <div className="bg-white/70 backdrop-blur-lg border border-white/20 rounded-2xl shadow-xl p-8 inline-block">
+                <div className="text-gray-400 text-6xl mb-4">🔍</div>
+                <h3 className="text-xl font-semibold bg-gradient-to-r from-gray-700 to-gray-500 bg-clip-text text-transparent mb-3">
+                  No se encontraron estudiantes
+                </h3>
+                <p className="text-gray-600 font-medium">
+                  Intenta cambiar los filtros de búsqueda
+                </p>
+              </div>
             </div>
           )}
         </div>

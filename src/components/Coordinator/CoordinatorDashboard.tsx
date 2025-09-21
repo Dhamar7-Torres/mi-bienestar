@@ -77,60 +77,60 @@ function CoordinatorDashboard() {
       <div className="space-y-6">
         {/* Gráfica de barras con CSS */}
         <div className="space-y-4">
-          <h3 className="text-sm font-medium text-gray-700 mb-3">Distribución por nivel de riesgo</h3>
+          <h3 className="text-sm font-semibold text-gray-700 mb-4">Distribución por nivel de riesgo</h3>
           
           {/* Barra Riesgo Bajo */}
-          <div className="flex items-center space-x-3">
-            <div className="w-16 text-sm font-medium text-gray-700">Bajo</div>
-            <div className="flex-1 bg-gray-200 rounded-full h-6 relative overflow-hidden">
+          <div className="flex items-center space-x-4">
+            <div className="w-16 text-sm font-semibold text-gray-700">Bajo</div>
+            <div className="flex-1 bg-gradient-to-r from-gray-200 to-gray-100 rounded-full h-8 relative overflow-hidden shadow-inner">
               <div 
-                className="bg-green-500 h-full rounded-full transition-all duration-500 flex items-center justify-end pr-2"
-                style={{ width: `${Math.max(porcentajeBajo, 5)}%` }}
+                className="bg-gradient-to-r from-green-500 to-emerald-500 h-full rounded-full transition-all duration-1000 flex items-center justify-end pr-3 shadow-lg"
+                style={{ width: `${Math.max(porcentajeBajo, 8)}%` }}
               >
-                <span className="text-white text-xs font-medium">
+                <span className="text-white text-sm font-bold">
                   {distribucionRiesgo.bajo || 0}
                 </span>
               </div>
             </div>
-            <div className="w-12 text-sm text-gray-600">{porcentajeBajo}%</div>
+            <div className="w-12 text-sm font-semibold text-gray-600">{porcentajeBajo}%</div>
           </div>
 
           {/* Barra Riesgo Medio */}
-          <div className="flex items-center space-x-3">
-            <div className="w-16 text-sm font-medium text-gray-700">Medio</div>
-            <div className="flex-1 bg-gray-200 rounded-full h-6 relative overflow-hidden">
+          <div className="flex items-center space-x-4">
+            <div className="w-16 text-sm font-semibold text-gray-700">Medio</div>
+            <div className="flex-1 bg-gradient-to-r from-gray-200 to-gray-100 rounded-full h-8 relative overflow-hidden shadow-inner">
               <div 
-                className="bg-yellow-500 h-full rounded-full transition-all duration-500 flex items-center justify-end pr-2"
-                style={{ width: `${Math.max(porcentajeMedio, 5)}%` }}
+                className="bg-gradient-to-r from-yellow-500 to-amber-500 h-full rounded-full transition-all duration-1000 flex items-center justify-end pr-3 shadow-lg"
+                style={{ width: `${Math.max(porcentajeMedio, 8)}%` }}
               >
-                <span className="text-white text-xs font-medium">
+                <span className="text-white text-sm font-bold">
                   {distribucionRiesgo.medio || 0}
                 </span>
               </div>
             </div>
-            <div className="w-12 text-sm text-gray-600">{porcentajeMedio}%</div>
+            <div className="w-12 text-sm font-semibold text-gray-600">{porcentajeMedio}%</div>
           </div>
 
           {/* Barra Riesgo Alto */}
-          <div className="flex items-center space-x-3">
-            <div className="w-16 text-sm font-medium text-gray-700">Alto</div>
-            <div className="flex-1 bg-gray-200 rounded-full h-6 relative overflow-hidden">
+          <div className="flex items-center space-x-4">
+            <div className="w-16 text-sm font-semibold text-gray-700">Alto</div>
+            <div className="flex-1 bg-gradient-to-r from-gray-200 to-gray-100 rounded-full h-8 relative overflow-hidden shadow-inner">
               <div 
-                className="bg-red-500 h-full rounded-full transition-all duration-500 flex items-center justify-end pr-2"
-                style={{ width: `${Math.max(porcentajeAlto, 5)}%` }}
+                className="bg-gradient-to-r from-red-500 to-rose-500 h-full rounded-full transition-all duration-1000 flex items-center justify-end pr-3 shadow-lg"
+                style={{ width: `${Math.max(porcentajeAlto, 8)}%` }}
               >
-                <span className="text-white text-xs font-medium">
+                <span className="text-white text-sm font-bold">
                   {distribucionRiesgo.alto || 0}
                 </span>
               </div>
             </div>
-            <div className="w-12 text-sm text-gray-600">{porcentajeAlto}%</div>
+            <div className="w-12 text-sm font-semibold text-gray-600">{porcentajeAlto}%</div>
           </div>
         </div>
 
         {/* Gráfica circular simple con CSS */}
         <div className="flex justify-center">
-          <div className="relative w-48 h-48">
+          <div className="relative w-52 h-52">
             <svg className="w-full h-full transform -rotate-90" viewBox="0 0 100 100">
               {/* Círculo base */}
               <circle
@@ -139,7 +139,7 @@ function CoordinatorDashboard() {
                 r="40"
                 fill="none"
                 stroke="#e5e7eb"
-                strokeWidth="8"
+                strokeWidth="10"
               />
               
               {/* Segmento Bajo */}
@@ -149,10 +149,10 @@ function CoordinatorDashboard() {
                 r="40"
                 fill="none"
                 stroke="#10b981"
-                strokeWidth="8"
+                strokeWidth="10"
                 strokeDasharray={`${(porcentajeBajo * 251.2) / 100} 251.2`}
                 strokeDashoffset="0"
-                className="transition-all duration-1000"
+                className="transition-all duration-1000 drop-shadow-lg"
               />
               
               {/* Segmento Medio */}
@@ -162,10 +162,10 @@ function CoordinatorDashboard() {
                 r="40"
                 fill="none"
                 stroke="#f59e0b"
-                strokeWidth="8"
+                strokeWidth="10"
                 strokeDasharray={`${(porcentajeMedio * 251.2) / 100} 251.2`}
                 strokeDashoffset={`-${(porcentajeBajo * 251.2) / 100}`}
-                className="transition-all duration-1000"
+                className="transition-all duration-1000 drop-shadow-lg"
               />
               
               {/* Segmento Alto */}
@@ -175,17 +175,17 @@ function CoordinatorDashboard() {
                 r="40"
                 fill="none"
                 stroke="#ef4444"
-                strokeWidth="8"
+                strokeWidth="10"
                 strokeDasharray={`${(porcentajeAlto * 251.2) / 100} 251.2`}
                 strokeDashoffset={`-${((porcentajeBajo + porcentajeMedio) * 251.2) / 100}`}
-                className="transition-all duration-1000"
+                className="transition-all duration-1000 drop-shadow-lg"
               />
             </svg>
             
             {/* Centro con total */}
-            <div className="absolute inset-0 flex flex-col items-center justify-center">
-              <div className="text-2xl font-bold text-gray-900">{totalEstudiantes}</div>
-              <div className="text-sm text-gray-600">Estudiantes</div>
+            <div className="absolute inset-0 flex flex-col items-center justify-center bg-white/80 backdrop-blur-sm rounded-full m-6 shadow-lg">
+              <div className="text-3xl font-bold bg-gradient-to-r from-gray-800 to-gray-600 bg-clip-text text-transparent">{totalEstudiantes}</div>
+              <div className="text-sm font-semibold text-gray-600">Estudiantes</div>
             </div>
           </div>
         </div>
@@ -193,16 +193,16 @@ function CoordinatorDashboard() {
         {/* Leyenda */}
         <div className="flex justify-center space-x-6">
           <div className="flex items-center space-x-2">
-            <div className="w-4 h-4 bg-green-500 rounded"></div>
-            <span className="text-sm text-gray-700">Bajo ({distribucionRiesgo.bajo || 0})</span>
+            <div className="w-4 h-4 bg-gradient-to-r from-green-500 to-emerald-500 rounded-full shadow-sm"></div>
+            <span className="text-sm font-medium text-gray-700">Bajo ({distribucionRiesgo.bajo || 0})</span>
           </div>
           <div className="flex items-center space-x-2">
-            <div className="w-4 h-4 bg-yellow-500 rounded"></div>
-            <span className="text-sm text-gray-700">Medio ({distribucionRiesgo.medio || 0})</span>
+            <div className="w-4 h-4 bg-gradient-to-r from-yellow-500 to-amber-500 rounded-full shadow-sm"></div>
+            <span className="text-sm font-medium text-gray-700">Medio ({distribucionRiesgo.medio || 0})</span>
           </div>
           <div className="flex items-center space-x-2">
-            <div className="w-4 h-4 bg-red-500 rounded"></div>
-            <span className="text-sm text-gray-700">Alto ({distribucionRiesgo.alto || 0})</span>
+            <div className="w-4 h-4 bg-gradient-to-r from-red-500 to-rose-500 rounded-full shadow-sm"></div>
+            <span className="text-sm font-medium text-gray-700">Alto ({distribucionRiesgo.alto || 0})</span>
           </div>
         </div>
       </div>
@@ -222,14 +222,20 @@ function CoordinatorDashboard() {
     return (
       <div>
         <Navigation />
-        <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-          <div className="text-center">
+        <div className="min-h-screen bg-gradient-to-br from-cyan-200 via-teal-100 to-sky-50 flex items-center justify-center relative overflow-hidden">
+          {/* Elementos decorativos de fondo */}
+          <div className="absolute inset-0 overflow-hidden">
+            <div className="absolute -top-40 -right-40 w-80 h-80 rounded-full bg-gradient-to-r from-cyan-200 to-blue-200 opacity-20 blur-3xl"></div>
+            <div className="absolute -bottom-40 -left-40 w-80 h-80 rounded-full bg-gradient-to-r from-sky-200 to-cyan-200 opacity-20 blur-3xl"></div>
+          </div>
+          
+          <div className="text-center relative z-10 bg-white/70 backdrop-blur-lg border border-white/20 rounded-2xl shadow-xl p-8">
             <div className="text-red-600 text-6xl mb-4">⚠️</div>
-            <h2 className="text-2xl font-bold text-gray-900 mb-2">Error al cargar</h2>
-            <p className="text-gray-600 mb-4">{error}</p>
+            <h2 className="text-2xl font-bold bg-gradient-to-r from-gray-800 to-gray-600 bg-clip-text text-transparent mb-2">Error al cargar</h2>
+            <p className="text-gray-600 mb-6">{error}</p>
             <button 
               onClick={() => window.location.reload()}
-              className="btn-primary"
+              className="px-6 py-3 bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-600 hover:to-blue-700 text-white font-semibold rounded-xl shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 transition-all duration-200"
             >
               Reintentar
             </button>
@@ -245,90 +251,97 @@ function CoordinatorDashboard() {
     <div>
       <Navigation />
       
-      <div className="min-h-screen bg-gray-50">
-        <div className="max-w-7xl mx-auto py-6 px-4 sm:px-6 lg:px-8">
+      <div className="min-h-screen bg-gradient-to-br from-cyan-200 via-teal-100 to-sky-50 relative overflow-hidden">
+        {/* Elementos decorativos de fondo */}
+        <div className="absolute inset-0 overflow-hidden">
+          <div className="absolute -top-40 -right-40 w-80 h-80 rounded-full bg-gradient-to-r from-cyan-200 to-blue-200 opacity-20 blur-3xl"></div>
+          <div className="absolute -bottom-40 -left-40 w-80 h-80 rounded-full bg-gradient-to-r from-sky-200 to-cyan-200 opacity-20 blur-3xl"></div>
+          <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-96 h-96 rounded-full bg-gradient-to-r from-blue-100 to-cyan-100 opacity-10 blur-3xl"></div>
+        </div>
+
+        <div className="max-w-7xl mx-auto py-6 px-4 sm:px-6 lg:px-8 relative z-10">
           {/* Encabezado */}
-          <div className="mb-8">
-            <h1 className="text-3xl font-bold text-gray-900">
+          <div className="mb-8 text-center">
+            <h1 className="text-4xl font-bold bg-gradient-to-r from-gray-800 to-gray-600 bg-clip-text text-transparent mb-4">
               Panel de Control - Coordinador 📊
             </h1>
-            <p className="mt-2 text-gray-600">
+            <p className="text-lg text-gray-600 font-medium">
               Bienvenido, {usuario?.nombreCompleto}
             </p>
             {usuario?.coordinador && (
-              <p className="text-sm text-blue-600">{usuario.coordinador.departamento}</p>
+              <p className="text-sm font-semibold text-transparent bg-gradient-to-r from-cyan-600 to-blue-600 bg-clip-text">{usuario.coordinador.departamento}</p>
             )}
           </div>
 
           {/* Tarjetas de resumen */}
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-            <div className="card">
+            <div className="bg-white/70 backdrop-blur-lg border border-white/20 rounded-2xl shadow-lg hover:shadow-xl transition-all duration-200 p-6 hover:-translate-y-1">
               <div className="flex items-center">
                 <div className="flex-shrink-0">
-                  <div className="w-8 h-8 bg-blue-500 rounded-md flex items-center justify-center">
-                    <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <div className="w-12 h-12 bg-gradient-to-r from-blue-500 to-cyan-500 rounded-2xl flex items-center justify-center shadow-lg">
+                    <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
                     </svg>
                   </div>
                 </div>
                 <div className="ml-5 w-0 flex-1">
                   <dl>
-                    <dt className="text-sm font-medium text-gray-500 truncate">Total Estudiantes</dt>
-                    <dd className="text-lg font-medium text-gray-900">{resumenGeneral.totalEstudiantes}</dd>
+                    <dt className="text-sm font-semibold text-gray-500 truncate">Total Estudiantes</dt>
+                    <dd className="text-2xl font-bold text-gray-900">{resumenGeneral.totalEstudiantes}</dd>
                   </dl>
                 </div>
               </div>
             </div>
 
-            <div className="card">
+            <div className="bg-white/70 backdrop-blur-lg border border-white/20 rounded-2xl shadow-lg hover:shadow-xl transition-all duration-200 p-6 hover:-translate-y-1">
               <div className="flex items-center">
                 <div className="flex-shrink-0">
-                  <div className="w-8 h-8 bg-red-500 rounded-md flex items-center justify-center">
-                    <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <div className="w-12 h-12 bg-gradient-to-r from-red-500 to-rose-500 rounded-2xl flex items-center justify-center shadow-lg">
+                    <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.732-.833-2.464 0L4.268 16.5c-.77.833.192 2.5 1.732 2.5z" />
                     </svg>
                   </div>
                 </div>
                 <div className="ml-5 w-0 flex-1">
                   <dl>
-                    <dt className="text-sm font-medium text-gray-500 truncate">Alertas de Riesgo Alto</dt>
-                    <dd className="text-lg font-medium text-gray-900">{resumenGeneral.alertasRiesgoAlto}</dd>
+                    <dt className="text-sm font-semibold text-gray-500 truncate">Alertas de Riesgo Alto</dt>
+                    <dd className="text-2xl font-bold text-gray-900">{resumenGeneral.alertasRiesgoAlto}</dd>
                   </dl>
                 </div>
               </div>
             </div>
 
-            <div className="card">
+            <div className="bg-white/70 backdrop-blur-lg border border-white/20 rounded-2xl shadow-lg hover:shadow-xl transition-all duration-200 p-6 hover:-translate-y-1">
               <div className="flex items-center">
                 <div className="flex-shrink-0">
-                  <div className="w-8 h-8 bg-green-500 rounded-md flex items-center justify-center">
-                    <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <div className="w-12 h-12 bg-gradient-to-r from-green-500 to-emerald-500 rounded-2xl flex items-center justify-center shadow-lg">
+                    <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
                     </svg>
                   </div>
                 </div>
                 <div className="ml-5 w-0 flex-1">
                   <dl>
-                    <dt className="text-sm font-medium text-gray-500 truncate">Tasa de Respuesta</dt>
-                    <dd className="text-lg font-medium text-gray-900">{resumenGeneral.tasaRespuestaSemanal}%</dd>
+                    <dt className="text-sm font-semibold text-gray-500 truncate">Tasa de Respuesta</dt>
+                    <dd className="text-2xl font-bold text-gray-900">{resumenGeneral.tasaRespuestaSemanal}%</dd>
                   </dl>
                 </div>
               </div>
             </div>
 
-            <div className="card">
+            <div className="bg-white/70 backdrop-blur-lg border border-white/20 rounded-2xl shadow-lg hover:shadow-xl transition-all duration-200 p-6 hover:-translate-y-1">
               <div className="flex items-center">
                 <div className="flex-shrink-0">
-                  <div className="w-8 h-8 bg-purple-500 rounded-md flex items-center justify-center">
-                    <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <div className="w-12 h-12 bg-gradient-to-r from-purple-500 to-indigo-500 rounded-2xl flex items-center justify-center shadow-lg">
+                    <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
                     </svg>
                   </div>
                 </div>
                 <div className="ml-5 w-0 flex-1">
                   <dl>
-                    <dt className="text-sm font-medium text-gray-500 truncate">Promedio General</dt>
-                    <dd className="text-lg font-medium text-gray-900">
+                    <dt className="text-sm font-semibold text-gray-500 truncate">Promedio General</dt>
+                    <dd className="text-2xl font-bold text-gray-900">
                       E:{resumenGeneral.promedioEstres.toFixed(1)} B:{resumenGeneral.promedioBurnout.toFixed(1)}
                     </dd>
                   </dl>
@@ -339,57 +352,57 @@ function CoordinatorDashboard() {
 
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
             {/* Distribución por Nivel de Riesgo - GRÁFICA CON CSS */}
-            <div className="card">
-              <div className="card-header">
-                <h2 className="text-xl font-semibold text-gray-900 mb-4">Distribución por Nivel de Riesgo</h2>
+            <div className="bg-white/70 backdrop-blur-lg border border-white/20 rounded-2xl shadow-lg p-6">
+              <div className="mb-6">
+                <h2 className="text-xl font-semibold bg-gradient-to-r from-gray-800 to-gray-600 bg-clip-text text-transparent">Distribución por Nivel de Riesgo</h2>
               </div>
               
               {resumenGeneral.totalEstudiantes > 0 ? (
                 crearGraficaDistribucion()
               ) : (
                 <div className="text-center py-8">
-                  <p className="text-gray-500">No hay datos disponibles para mostrar</p>
+                  <p className="text-gray-500 font-medium">No hay datos disponibles para mostrar</p>
                 </div>
               )}
             </div>
 
             {/* Estudiantes de riesgo alto */}
-            <div className="card">
-              <div className="card-header">
-                <h2 className="text-xl font-semibold text-gray-900">Estudiantes de Riesgo Alto</h2>
+            <div className="bg-white/70 backdrop-blur-lg border border-white/20 rounded-2xl shadow-lg p-6">
+              <div className="mb-6">
+                <h2 className="text-xl font-semibold bg-gradient-to-r from-gray-800 to-gray-600 bg-clip-text text-transparent">Estudiantes de Riesgo Alto</h2>
               </div>
               
               {estudiantesRiesgoAlto.length > 0 ? (
-                <div className="space-y-3">
+                <div className="space-y-4">
                   {estudiantesRiesgoAlto.slice(0, 5).map((estudiante) => (
-                    <div key={estudiante.id} className="flex items-center justify-between p-3 bg-red-50 rounded-lg">
+                    <div key={estudiante.id} className="flex items-center justify-between p-4 bg-gradient-to-r from-red-50 to-rose-50 border border-red-100 rounded-xl hover:shadow-md transition-all duration-200">
                       <div>
-                        <p className="font-medium text-gray-900">{estudiante.usuario.nombreCompleto}</p>
-                        <p className="text-sm text-gray-600">{estudiante.carrera}</p>
-                        <p className="text-xs text-gray-500">
+                        <p className="font-semibold text-gray-900">{estudiante.usuario.nombreCompleto}</p>
+                        <p className="text-sm text-gray-600 font-medium">{estudiante.carrera}</p>
+                        <p className="text-xs text-gray-500 font-medium">
                           E:{estudiante.nivelEstresActual}/10 • B:{estudiante.nivelBurnoutActual}/10
                         </p>
                       </div>
                       <Link
                         to={`${ROUTES.COORDINATOR_STUDENTS}/${estudiante.id}`}
-                        className="text-blue-600 hover:text-blue-700 text-sm font-medium"
+                        className="text-transparent bg-gradient-to-r from-blue-600 to-cyan-600 bg-clip-text hover:from-blue-700 hover:to-cyan-700 text-sm font-semibold transition-all duration-200"
                       >
                         Ver detalles →
                       </Link>
                     </div>
                   ))}
                   
-                  <div className="pt-3">
+                  <div className="pt-4 border-t border-white/50">
                     <Link 
                       to={ROUTES.COORDINATOR_STUDENTS}
-                      className="text-blue-600 hover:text-blue-700 text-sm font-medium"
+                      className="text-transparent bg-gradient-to-r from-blue-600 to-cyan-600 bg-clip-text hover:from-blue-700 hover:to-cyan-700 text-sm font-semibold transition-all duration-200"
                     >
                       Ver todos los estudiantes →
                     </Link>
                   </div>
                 </div>
               ) : (
-                <p className="text-gray-500 text-center py-4">
+                <p className="text-gray-500 text-center py-4 font-medium">
                   No hay estudiantes con riesgo alto actualmente
                 </p>
               )}
@@ -397,13 +410,13 @@ function CoordinatorDashboard() {
           </div>
 
           {/* Alertas recientes - Ancho completo */}
-          <div className="card">
-            <div className="card-header">
+          <div className="bg-white/70 backdrop-blur-lg border border-white/20 rounded-2xl shadow-lg p-6">
+            <div className="mb-6">
               <div className="flex items-center justify-between">
-                <h2 className="text-xl font-semibold text-gray-900">Alertas Recientes</h2>
+                <h2 className="text-xl font-semibold bg-gradient-to-r from-gray-800 to-gray-600 bg-clip-text text-transparent">Alertas Recientes</h2>
                 <Link 
                   to={ROUTES.COORDINATOR_ALERTS}
-                  className="text-blue-600 hover:text-blue-700 text-sm font-medium"
+                  className="text-transparent bg-gradient-to-r from-blue-600 to-cyan-600 bg-clip-text hover:from-blue-700 hover:to-cyan-700 text-sm font-semibold transition-all duration-200"
                 >
                   Ver todas
                 </Link>
@@ -413,21 +426,21 @@ function CoordinatorDashboard() {
             {alertasRecientes.length > 0 ? (
               <div className="space-y-3">
                 {alertasRecientes.slice(0, 8).map((alerta) => (
-                  <div key={alerta.id} className="flex items-start space-x-3 p-3 hover:bg-gray-50 rounded-lg">
-                    <div className={`flex-shrink-0 w-2 h-2 rounded-full mt-2 ${
-                      alerta.severidad === 'ALTO' ? 'bg-red-500' :
-                      alerta.severidad === 'MEDIO' ? 'bg-yellow-500' : 'bg-green-500'
+                  <div key={alerta.id} className="flex items-start space-x-4 p-4 hover:bg-white/50 rounded-xl transition-all duration-200">
+                    <div className={`flex-shrink-0 w-3 h-3 rounded-full mt-2 shadow-sm ${
+                      alerta.severidad === 'ALTO' ? 'bg-gradient-to-r from-red-500 to-rose-500' :
+                      alerta.severidad === 'MEDIO' ? 'bg-gradient-to-r from-yellow-500 to-amber-500' : 'bg-gradient-to-r from-green-500 to-emerald-500'
                     }`}></div>
                     <div className="flex-1 min-w-0">
-                      <p className="text-sm font-medium text-gray-900 truncate">
+                      <p className="text-sm font-semibold text-gray-900 truncate">
                         {alerta.estudiante.nombre}
                       </p>
-                      <p className="text-sm text-gray-600">{alerta.mensaje}</p>
-                      <div className="flex items-center justify-between mt-1">
-                        <p className="text-xs text-gray-500">
+                      <p className="text-sm text-gray-600 leading-relaxed">{alerta.mensaje}</p>
+                      <div className="flex items-center justify-between mt-2">
+                        <p className="text-xs text-gray-500 font-medium">
                           {getTiempoTranscurrido(alerta.fechaCreacion)}
                         </p>
-                        <span className={`px-2 py-1 text-xs font-medium rounded-full ${getRiskColor(alerta.severidad).bg} ${getRiskColor(alerta.severidad).text}`}>
+                        <span className={`px-3 py-1 text-xs font-semibold rounded-full ${getRiskColor(alerta.severidad).bg} ${getRiskColor(alerta.severidad).text} shadow-sm`}>
                           {alerta.severidad}
                         </span>
                       </div>
@@ -436,7 +449,7 @@ function CoordinatorDashboard() {
                 ))}
               </div>
             ) : (
-              <p className="text-gray-500 text-center py-4">
+              <p className="text-gray-500 text-center py-4 font-medium">
                 No hay alertas recientes
               </p>
             )}
