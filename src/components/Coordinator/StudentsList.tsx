@@ -33,8 +33,9 @@ function StudentsList() {
   const [busqueda, setBusqueda] = useState(searchParams.get('busqueda') || '');
   const [paginaActual, setPaginaActual] = useState(parseInt(searchParams.get('pagina') || '1'));
   
-  // Estado para debounce de búsqueda
+  // Estado para debounce de búsqueda y carrera
   const [busquedaDebounced, setBusquedaDebounced] = useState(busqueda);
+  const [filtroCarreraDebounced, setFiltroCarreraDebounced] = useState(filtroCarrera);
   
   const limite = 20;
 
@@ -128,25 +129,24 @@ function StudentsList() {
     return () => clearTimeout(timer);
   }, [busqueda]);
 
-  // Un solo useEffect para manejar TODOS los cambios
+  // Debounce para el filtro de carrera
   useEffect(() => {
-    const fetchAndUpdate = async () => {
+    const timer = setTimeout(() => {
+      setFiltroCarreraDebounced(filtroCarrera);
+    }, 300); // Menos delay para carrera
+    return () => clearTimeout(timer);
+  }, [filtroCarrera]);
+
+  // Effect SOLO para fetch cuando terminan los debounces
+  useEffect(() => {
+    const fetchData = async () => {
       try {
         setIsLoading(true);
         setError(null);
 
-        // Actualizar URL
-        const params = new URLSearchParams();
-        if (filtroRiesgo) params.set('riesgo', filtroRiesgo);
-        if (filtroCarrera) params.set('carrera', filtroCarrera);
-        if (busquedaDebounced) params.set('busqueda', busquedaDebounced);
-        if (paginaActual > 1) params.set('pagina', paginaActual.toString());
-        setSearchParams(params, { replace: true });
-
-        // Hacer fetch
         const response = await apiService.getStudentsList({
           filtroRiesgo: filtroRiesgo || undefined,
-          filtroCarrera: filtroCarrera || undefined,
+          filtroCarrera: filtroCarreraDebounced || undefined, // Usar versión debounced
           busqueda: busquedaDebounced || undefined,
           pagina: paginaActual,
           limite
@@ -155,9 +155,10 @@ function StudentsList() {
         if (response.success) {
           let estudiantes = [...response.data.estudiantes];
           
-          // Aplicar ordenamiento combinado: filtro de riesgo + búsqueda
-          if (filtroRiesgo || (busquedaDebounced && busquedaDebounced.trim())) {
-            const termino = busquedaDebounced ? busquedaDebounced.toLowerCase().trim() : '';
+          // Aplicar ordenamiento combinado
+          if (filtroRiesgo || filtroCarreraDebounced || busquedaDebounced) {
+            const terminoBusqueda = busquedaDebounced ? busquedaDebounced.toLowerCase().trim() : '';
+            const terminoCarrera = filtroCarreraDebounced ? filtroCarreraDebounced.toLowerCase().trim() : '';
             
             estudiantes.sort((a, b) => {
               // PRIMERA PRIORIDAD: Filtro de riesgo
@@ -165,35 +166,49 @@ function StudentsList() {
                 const aCoincideRiesgo = a.estadoRiesgo === filtroRiesgo;
                 const bCoincideRiesgo = b.estadoRiesgo === filtroRiesgo;
                 
-                // Si uno coincide con el filtro de riesgo y el otro no, el que coincide va primero
                 if (aCoincideRiesgo && !bCoincideRiesgo) return -1;
                 if (bCoincideRiesgo && !aCoincideRiesgo) return 1;
               }
               
-              // SEGUNDA PRIORIDAD: Búsqueda por nombre/correo (solo si hay búsqueda activa)
-              if (termino) {
+              // SEGUNDA PRIORIDAD: Filtro de carrera
+              if (terminoCarrera) {
+                const carreraA = (a.carrera || '').toLowerCase();
+                const carreraB = (b.carrera || '').toLowerCase();
+                
+                const aEmpiezaCarrera = carreraA.startsWith(terminoCarrera);
+                const bEmpiezaCarrera = carreraB.startsWith(terminoCarrera);
+                
+                if (aEmpiezaCarrera && !bEmpiezaCarrera) return -1;
+                if (bEmpiezaCarrera && !aEmpiezaCarrera) return 1;
+                
+                const aContieneCarrera = carreraA.includes(terminoCarrera);
+                const bContieneCarrera = carreraB.includes(terminoCarrera);
+                
+                if (aContieneCarrera && !bContieneCarrera) return -1;
+                if (bContieneCarrera && !aContieneCarrera) return 1;
+              }
+              
+              // TERCERA PRIORIDAD: Búsqueda por nombre/correo
+              if (terminoBusqueda) {
                 const nombreA = (a.nombreCompleto || '').toLowerCase();
                 const nombreB = (b.nombreCompleto || '').toLowerCase();
                 const correoA = (a.correo || '').toLowerCase();
                 const correoB = (b.correo || '').toLowerCase();
                 
-                // Máxima prioridad: nombre empieza con el término
-                const aPrimeraCoincidencia = nombreA.startsWith(termino);
-                const bPrimeraCoincidencia = nombreB.startsWith(termino);
+                const aPrimeraCoincidencia = nombreA.startsWith(terminoBusqueda);
+                const bPrimeraCoincidencia = nombreB.startsWith(terminoBusqueda);
                 
                 if (aPrimeraCoincidencia && !bPrimeraCoincidencia) return -1;
                 if (bPrimeraCoincidencia && !aPrimeraCoincidencia) return 1;
                 
-                // Segunda prioridad: nombre contiene el término
-                const aContieneNombre = nombreA.includes(termino);
-                const bContieneNombre = nombreB.includes(termino);
+                const aContieneNombre = nombreA.includes(terminoBusqueda);
+                const bContieneNombre = nombreB.includes(terminoBusqueda);
                 
                 if (aContieneNombre && !bContieneNombre) return -1;
                 if (bContieneNombre && !aContieneNombre) return 1;
                 
-                // Tercera prioridad: correo contiene el término
-                const aContieneCorreo = correoA.includes(termino);
-                const bContieneCorreo = correoB.includes(termino);
+                const aContieneCorreo = correoA.includes(terminoBusqueda);
+                const bContieneCorreo = correoB.includes(terminoBusqueda);
                 
                 if (aContieneCorreo && !bContieneCorreo) return -1;
                 if (bContieneCorreo && !aContieneCorreo) return 1;
@@ -220,8 +235,8 @@ function StudentsList() {
       }
     };
 
-    fetchAndUpdate();
-  }, [filtroRiesgo, filtroCarrera, busquedaDebounced, paginaActual, setSearchParams]);
+    fetchData();
+  }, [filtroRiesgo, filtroCarreraDebounced, busquedaDebounced, paginaActual]); // SOLO versiones debounced
 
   // Handlers para los filtros
   const handleFiltroRiesgoChange = (value: string) => {
@@ -256,8 +271,9 @@ function StudentsList() {
   const limpiarFiltros = () => {
     setFiltroRiesgo('');
     setFiltroCarrera('');
+    setFiltroCarreraDebounced('');
     setBusqueda('');
-    setBusquedaDebounced(''); // También limpiar el debounced
+    setBusquedaDebounced('');
     setPaginaActual(1);
   };
 
@@ -265,7 +281,7 @@ function StudentsList() {
     try {
       const response = await apiService.getStudentsList({
         filtroRiesgo: filtroRiesgo || undefined,
-        filtroCarrera: filtroCarrera || undefined,
+        filtroCarrera: filtroCarreraDebounced || undefined,
         busqueda: busquedaDebounced || undefined,
         formato: 'json'
       });
@@ -400,14 +416,22 @@ function StudentsList() {
                 <label htmlFor="filtroCarrera" className="block text-sm font-semibold text-gray-700 mb-2">
                   Carrera
                 </label>
-                <input
-                  type="text"
-                  id="filtroCarrera"
-                  value={filtroCarrera}
-                  onChange={(e) => handleFiltroCarreraChange(e.target.value)}
-                  className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl bg-white shadow-sm transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-transparent hover:bg-gray-50"
-                  placeholder="Filtrar por carrera..."
-                />
+                <div className="relative">
+                  <input
+                    type="text"
+                    id="filtroCarrera"
+                    value={filtroCarrera}
+                    onChange={(e) => handleFiltroCarreraChange(e.target.value)}
+                    className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl bg-white shadow-sm transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-transparent hover:bg-gray-50"
+                    placeholder="Filtrar por carrera..."
+                  />
+                  {/* Indicador de filtrado activo */}
+                  {filtroCarrera !== filtroCarreraDebounced && (
+                    <div className="absolute inset-y-0 right-0 pr-3 flex items-center">
+                      <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-cyan-500"></div>
+                    </div>
+                  )}
+                </div>
               </div>
             </div>
 
@@ -425,7 +449,7 @@ function StudentsList() {
               <div className="flex items-center space-x-4">
                 <span className="text-sm text-gray-600 font-medium">
                   {studentsData.paginacion.total} estudiante{studentsData.paginacion.total !== 1 ? 's' : ''}
-                  {(filtroRiesgo || filtroCarrera || busquedaDebounced) && ' encontrados'}
+                  {(filtroRiesgo || filtroCarreraDebounced || busquedaDebounced) && ' encontrados'}
                 </span>
                 <button
                   onClick={exportarDatos}
@@ -437,7 +461,7 @@ function StudentsList() {
             </div>
 
             {/* Filtros activos */}
-            {(filtroRiesgo || filtroCarrera || busquedaDebounced) && (
+            {(filtroRiesgo || filtroCarreraDebounced || busquedaDebounced) && (
               <div className="mt-4 pt-4 border-t border-white/30">
                 <div className="flex flex-wrap items-center gap-2">
                   <span className="text-sm font-semibold text-gray-700">Filtros activos:</span>
@@ -454,9 +478,9 @@ function StudentsList() {
                     </span>
                   )}
                   
-                  {filtroCarrera && (
+                  {filtroCarreraDebounced && (
                     <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-gradient-to-r from-green-100 to-teal-100 text-green-800 border border-green-200">
-                      Carrera: {filtroCarrera}
+                      Carrera: {filtroCarreraDebounced}
                       <button
                         onClick={() => handleFiltroCarreraChange('')}
                         className="ml-2 text-green-600 hover:text-green-800"
@@ -610,12 +634,12 @@ function StudentsList() {
                   No se encontraron estudiantes
                 </h3>
                 <p className="text-gray-600 font-medium">
-                  {(filtroRiesgo || filtroCarrera || busquedaDebounced) 
+                  {(filtroRiesgo || filtroCarreraDebounced || busquedaDebounced) 
                     ? 'Intenta cambiar los filtros de búsqueda'
                     : 'No hay estudiantes registrados en el sistema'
                   }
                 </p>
-                {(filtroRiesgo || filtroCarrera || busquedaDebounced) && (
+                {(filtroRiesgo || filtroCarreraDebounced || busquedaDebounced) && (
                   <button
                     onClick={limpiarFiltros}
                     className="mt-4 px-4 py-2 text-sm font-semibold text-white bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-600 hover:to-blue-700 rounded-xl shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 transition-all duration-200"
