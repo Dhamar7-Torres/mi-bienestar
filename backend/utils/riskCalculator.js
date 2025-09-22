@@ -15,9 +15,9 @@ class RiskCalculator {
       
       // Umbrales para clasificación de riesgo (sobre 10) - CORREGIDOS
       riskThresholds: {
-        BAJO: { min: 0, max: 3.5 },
-        MEDIO: { min: 3.6, max: 6.5 },
-        ALTO: { min: 6.6, max: 10 }
+        BAJO: { min: 0, max: 4.0 },
+        MEDIO: { min: 4.1, max: 6.0 },
+        ALTO: { min: 6.1, max: 10 }
       },
       
       // Pesos específicos por pregunta (se pueden personalizar)

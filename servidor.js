@@ -14,25 +14,20 @@ const PORT = process.env.PORT || 5000;
 
 // Middleware de seguridad
 app.use(helmet());
-
-// CORS
 app.use(cors({
   origin: process.env.URL_FRONTEND || 'http://localhost:5173',
   credentials: true
 }));
-
-// Body parsing
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-// Rate limiting
 const limiter = rateLimit({
   windowMs: 15 * 60 * 1000,
   max: 100
 });
 app.use('/api/', limiter);
 
-// ===== MIDDLEWARE DE AUTENTICACIÓN =====
+// Middleware de autenticación
 const authenticateToken = async (req, res, next) => {
   try {
     const authHeader = req.headers.authorization;
@@ -67,8 +62,8 @@ const authenticateToken = async (req, res, next) => {
       nombreCompleto: usuario.nombreCompleto,
       correo: usuario.correo,
       tipoUsuario: usuario.tipoUsuario,
-      estudiante: usuario.estudiante[0] || null, // Arreglar array
-      coordinador: usuario.coordinador[0] || null // Arreglar array
+      estudiante: usuario.estudiante[0] || null,
+      coordinador: usuario.coordinador[0] || null
     };
 
     next();
@@ -81,14 +76,153 @@ const authenticateToken = async (req, res, next) => {
   }
 };
 
+// ===== CLASE RISKCALCULATOR INTEGRADA =====
+class RiskCalculator {
+  constructor() {
+    this.config = {
+      categoryWeights: {
+        ESTRES: 1.2,
+        BURNOUT: 1.3
+      },
+      riskThresholds: {
+        BAJO: { min: 0, max: 4.0 },
+        MEDIO: { min: 4.1, max: 6.0 },
+        ALTO: { min: 6.1, max: 10 }
+      }
+    };
+  }
+
+  calculateCategoryScore(answers, weights, category) {
+    if (!answers || answers.length === 0) {
+      return { score: 0, details: [] };
+    }
+
+    let totalScore = 0;
+    let totalWeight = 0;
+
+    answers.forEach((answer, index) => {
+      const weight = weights[index] || 1;
+      totalScore += answer * weight;
+      totalWeight += weight;
+    });
+
+    const averageScore = totalScore / totalWeight;
+    const normalizedScore = (averageScore / 4) * 10;
+    
+    return {
+      score: Math.round(normalizedScore * 10) / 10,
+      averageScore
+    };
+  }
+
+  determineRiskLevel(score) {
+    const thresholds = this.config.riskThresholds;
+    
+    if (score >= thresholds.ALTO.min) {
+      return 'ALTO';
+    } else if (score >= thresholds.MEDIO.min) {
+      return 'MEDIO';
+    } else {
+      return 'BAJO';
+    }
+  }
+
+  processEvaluation(evaluationData) {
+    const { stressAnswers, burnoutAnswers, stressWeights, burnoutWeights } = evaluationData;
+
+    const stressResult = this.calculateCategoryScore(stressAnswers, stressWeights, 'ESTRES');
+    const burnoutResult = this.calculateCategoryScore(burnoutAnswers, burnoutWeights, 'BURNOUT');
+
+    const weightedTotal = (
+      (stressResult.score * this.config.categoryWeights.ESTRES) +
+      (burnoutResult.score * this.config.categoryWeights.BURNOUT)
+    ) / (this.config.categoryWeights.ESTRES + this.config.categoryWeights.BURNOUT);
+
+    const overallRiskLevel = this.determineRiskLevel(weightedTotal);
+    const stressRiskLevel = this.determineRiskLevel(stressResult.score);
+    const burnoutRiskLevel = this.determineRiskLevel(burnoutResult.score);
+
+    return {
+      scores: {
+        stress: Math.round(stressResult.score),
+        burnout: Math.round(burnoutResult.score),
+        total: Math.round(weightedTotal)
+      },
+      riskLevels: {
+        overall: overallRiskLevel,
+        stress: stressRiskLevel,
+        burnout: burnoutRiskLevel
+      }
+    };
+  }
+
+  shouldGenerateAlert(overallRisk, stressScore, burnoutScore) {
+    console.log('EVALUANDO ALERTAS:');
+    console.log(`Estrés: ${stressScore}, Burnout: ${burnoutScore}, General: ${overallRisk}`);
+    
+    const alerts = [];
+    
+    const stressRiskLevel = this.determineRiskLevel(stressScore);
+    const burnoutRiskLevel = this.determineRiskLevel(burnoutScore);
+    
+    console.log(`Niveles individuales - Estrés: ${stressRiskLevel}, Burnout: ${burnoutRiskLevel}`);
+    
+    if (stressRiskLevel === 'ALTO') {
+      alerts.push({
+        type: 'Estrés Alto',
+        severity: 'ALTO',
+        message: `Niveles críticos de estrés detectados (${Math.round(stressScore)}/10)`
+      });
+    }
+    
+    if (burnoutRiskLevel === 'ALTO') {
+      alerts.push({
+        type: 'Burnout Alto',
+        severity: 'ALTO',
+        message: `Niveles críticos de burnout detectados (${Math.round(burnoutScore)}/10)`
+      });
+    }
+    
+    if (alerts.length === 0 && stressRiskLevel === 'MEDIO') {
+      alerts.push({
+        type: 'Estrés Moderado',
+        severity: 'MEDIO',
+        message: `Niveles moderados de estrés detectados (${Math.round(stressScore)}/10)`
+      });
+    }
+    
+    if (alerts.length === 0 && burnoutRiskLevel === 'MEDIO') {
+      alerts.push({
+        type: 'Burnout Moderado',
+        severity: 'MEDIO',
+        message: `Síntomas moderados de burnout detectados (${Math.round(burnoutScore)}/10)`
+      });
+    }
+    
+    console.log(`Total alertas generadas: ${alerts.length}`);
+    
+    if (alerts.length === 0) {
+      return {
+        needed: false,
+        alerts: []
+      };
+    }
+    
+    return {
+      needed: true,
+      alerts: alerts
+    };
+  }
+}
+
+const riskCalculator = new RiskCalculator();
+
 // ===== RUTAS DE AUTENTICACIÓN =====
 
-// POST /api/auth/register
 app.post('/api/auth/register', async (req, res) => {
   try {
     const { nombreCompleto, correo, contrasena, tipoUsuario, carrera, semestre, departamento } = req.body;
 
-    // Validaciones básicas
     if (!nombreCompleto || !correo || !contrasena || !tipoUsuario) {
       return res.status(400).json({
         success: false,
@@ -96,7 +230,6 @@ app.post('/api/auth/register', async (req, res) => {
       });
     }
 
-    // Verificar si el usuario ya existe
     const usuarioExistente = await prisma.usuario.findUnique({
       where: { correo }
     });
@@ -108,7 +241,6 @@ app.post('/api/auth/register', async (req, res) => {
       });
     }
 
-    // Validaciones específicas
     if (tipoUsuario === 'ESTUDIANTE' && (!carrera || !semestre)) {
       return res.status(400).json({
         success: false,
@@ -116,17 +248,8 @@ app.post('/api/auth/register', async (req, res) => {
       });
     }
 
-    if (tipoUsuario === 'COORDINADOR' && !departamento) {
-      return res.status(400).json({
-        success: false,
-        message: 'Departamento es obligatorio para coordinadores'
-      });
-    }
-
-    // Hash de la contraseña
     const contrasenaHash = await bcrypt.hash(contrasena, 12);
 
-    // Crear usuario
     const nuevoUsuario = await prisma.usuario.create({
       data: {
         nombreCompleto,
@@ -136,7 +259,6 @@ app.post('/api/auth/register', async (req, res) => {
       }
     });
 
-    // Crear perfil específico
     let perfilEspecifico = null;
 
     if (tipoUsuario === 'ESTUDIANTE') {
@@ -156,7 +278,6 @@ app.post('/api/auth/register', async (req, res) => {
       });
     }
 
-    // Generar JWT
     const token = jwt.sign(
       { userId: nuevoUsuario.id, tipoUsuario: nuevoUsuario.tipoUsuario },
       process.env.JWT_SECRETO,
@@ -180,7 +301,7 @@ app.post('/api/auth/register', async (req, res) => {
     });
 
   } catch (error) {
-    console.error('❌ Error en registro:', error);
+    console.error('Error en registro:', error);
     res.status(500).json({
       success: false,
       message: 'Error interno del servidor durante el registro'
@@ -188,7 +309,6 @@ app.post('/api/auth/register', async (req, res) => {
   }
 });
 
-// POST /api/auth/login
 app.post('/api/auth/login', async (req, res) => {
   try {
     const { correo, contrasena } = req.body;
@@ -200,7 +320,6 @@ app.post('/api/auth/login', async (req, res) => {
       });
     }
 
-    // Buscar usuario
     const usuario = await prisma.usuario.findUnique({
       where: { correo },
       include: {
@@ -216,7 +335,6 @@ app.post('/api/auth/login', async (req, res) => {
       });
     }
 
-    // Verificar contraseña
     const contrasenaValida = await bcrypt.compare(contrasena, usuario.contrasenaHash);
 
     if (!contrasenaValida) {
@@ -226,14 +344,12 @@ app.post('/api/auth/login', async (req, res) => {
       });
     }
 
-    // Generar JWT
     const token = jwt.sign(
       { userId: usuario.id, tipoUsuario: usuario.tipoUsuario },
       process.env.JWT_SECRETO,
       { expiresIn: '7d' }
     );
 
-    // Preparar datos de respuesta
     const datosRespuesta = {
       id: usuario.id,
       nombreCompleto: usuario.nombreCompleto,
@@ -257,7 +373,7 @@ app.post('/api/auth/login', async (req, res) => {
     });
 
   } catch (error) {
-    console.error('❌ Error en login:', error);
+    console.error('Error en login:', error);
     res.status(500).json({
       success: false,
       message: 'Error interno del servidor'
@@ -265,73 +381,166 @@ app.post('/api/auth/login', async (req, res) => {
   }
 });
 
+// ===== RUTA CLAVE: EVALUACIÓN CORREGIDA =====
 
-
-// ===== RUTA FALTANTE - MUY IMPORTANTE =====
-// GET /api/auth/profile - Obtener perfil del usuario autenticado
-app.get('/api/auth/profile', authenticateToken, async (req, res) => {
+app.post('/api/students/evaluation/submit', authenticateToken, async (req, res) => {
   try {
-    const usuario = await prisma.usuario.findUnique({
-      where: { id: req.user.id },
-      include: {
-        estudiante: {
-          include: {
-            evaluaciones: {
-              orderBy: { fechaEvaluacion: 'desc' },
-              take: 5
-            },
-            alertas: {
-              where: { estaLeida: false },
-              orderBy: { fechaCreacion: 'desc' }
-            }
+    console.log('\n=== PROCESANDO EVALUACIÓN ===');
+    console.log('Usuario:', req.user.nombreCompleto);
+    
+    if (req.user.tipoUsuario !== 'ESTUDIANTE') {
+      return res.status(403).json({
+        success: false,
+        message: 'Acceso restringido a estudiantes'
+      });
+    }
+
+    const { respuestasEstres, respuestasBurnout } = req.body;
+    const estudianteId = req.user.estudiante?.id;
+
+    console.log('Datos recibidos:', { respuestasEstres, respuestasBurnout, estudianteId });
+
+    if (!estudianteId) {
+      return res.status(404).json({
+        success: false,
+        message: 'Perfil de estudiante no encontrado'
+      });
+    }
+
+    if (!respuestasEstres || !respuestasBurnout || !Array.isArray(respuestasEstres) || !Array.isArray(respuestasBurnout)) {
+      return res.status(400).json({
+        success: false,
+        message: 'Se requieren respuestas válidas para ambas categorías'
+      });
+    }
+
+    // Verificar límite semanal
+    const hoy = new Date();
+    const inicioSemana = new Date(hoy);
+    inicioSemana.setDate(hoy.getDate() - hoy.getDay());
+    inicioSemana.setHours(0, 0, 0, 0);
+
+    const evaluacionesSemana = await prisma.evaluacion.count({
+      where: {
+        estudianteId,
+        fechaEvaluacion: { gte: inicioSemana }
+      }
+    });
+
+    if (evaluacionesSemana >= 2) {
+      return res.status(429).json({
+        success: false,
+        message: 'Has alcanzado el límite de 2 evaluaciones por semana'
+      });
+    }
+
+    // Obtener pesos de preguntas
+    const preguntas = await prisma.preguntaEvaluacion.findMany({
+      where: { activa: true },
+      orderBy: { orden: 'asc' }
+    });
+
+    const pesosEstres = preguntas
+      .filter(p => p.categoria === 'ESTRES')
+      .map(p => p.peso);
+
+    const pesosBurnout = preguntas
+      .filter(p => p.categoria === 'BURNOUT')
+      .map(p => p.peso);
+
+    console.log('Pesos obtenidos:', { pesosEstres, pesosBurnout });
+
+    // Procesar evaluación
+    const resultado = riskCalculator.processEvaluation({
+      stressAnswers: respuestasEstres,
+      burnoutAnswers: respuestasBurnout,
+      stressWeights: pesosEstres,
+      burnoutWeights: pesosBurnout
+    });
+
+    console.log('Resultado procesado:', resultado);
+
+    // Guardar evaluación
+    console.log('Guardando evaluación...');
+    const evaluacion = await prisma.evaluacion.create({
+      data: {
+        estudianteId,
+        puntajeEstres: resultado.scores.stress,
+        puntajeBurnout: resultado.scores.burnout,
+        puntajeTotal: resultado.scores.total,
+        nivelRiesgo: resultado.riskLevels.overall,
+        respuestas: {
+          estres: respuestasEstres,
+          burnout: respuestasBurnout
+        }
+      }
+    });
+
+    console.log('Evaluación guardada:', evaluacion.id);
+
+    // Actualizar estudiante
+    console.log('Actualizando estudiante...');
+    await prisma.estudiante.update({
+      where: { id: estudianteId },
+      data: {
+        nivelEstresActual: resultado.scores.stress,
+        nivelBurnoutActual: resultado.scores.burnout,
+        estadoRiesgo: resultado.riskLevels.overall,
+        fechaUltimaEvaluacion: new Date()
+      }
+    });
+
+    console.log('Estudiante actualizado');
+
+    // Generar alertas
+    console.log('Generando alertas...');
+    const alertInfo = riskCalculator.shouldGenerateAlert(
+      resultado.riskLevels.overall,
+      resultado.scores.stress,
+      resultado.scores.burnout
+    );
+
+    let alertasCreadas = [];
+    if (alertInfo.needed && alertInfo.alerts && alertInfo.alerts.length > 0) {
+      for (const alert of alertInfo.alerts) {
+        console.log('Creando alerta:', alert.type);
+        
+        const nuevaAlerta = await prisma.alerta.create({
+          data: {
+            estudianteId,
+            tipoAlerta: alert.type,
+            severidad: alert.severity,
+            mensaje: alert.message
           }
+        });
+        
+        alertasCreadas.push({
+          id: nuevaAlerta.id,
+          tipo: alert.type,
+          severidad: alert.severity,
+          mensaje: alert.message
+        });
+      }
+    }
+
+    console.log(`Alertas creadas: ${alertasCreadas.length}`);
+
+    res.status(201).json({
+      success: true,
+      message: `Evaluación procesada exitosamente${alertasCreadas.length > 0 ? ` con ${alertasCreadas.length} alertas` : ''}`,
+      data: {
+        evaluacion: {
+          id: evaluacion.id,
+          fecha: evaluacion.fechaEvaluacion,
+          puntajes: resultado.scores,
+          nivelesRiesgo: resultado.riskLevels
         },
-        coordinador: true
+        alertasGeneradas: alertasCreadas
       }
     });
 
-    if (!usuario) {
-      return res.status(404).json({
-        success: false,
-        message: 'Usuario no encontrado'
-      });
-    }
-
-    // Preparar datos de respuesta
-    const datosRespuesta = {
-      id: usuario.id,
-      nombreCompleto: usuario.nombreCompleto,
-      correo: usuario.correo,
-      tipoUsuario: usuario.tipoUsuario,
-      fechaCreacion: usuario.fechaCreacion
-    };
-
-    if (usuario.tipoUsuario === 'ESTUDIANTE' && usuario.estudiante[0]) {
-      datosRespuesta.estudiante = {
-        id: usuario.estudiante[0].id,
-        carrera: usuario.estudiante[0].carrera,
-        semestre: usuario.estudiante[0].semestre,
-        nivelEstresActual: usuario.estudiante[0].nivelEstresActual,
-        nivelBurnoutActual: usuario.estudiante[0].nivelBurnoutActual,
-        estadoRiesgo: usuario.estudiante[0].estadoRiesgo,
-        fechaUltimaEvaluacion: usuario.estudiante[0].fechaUltimaEvaluacion,
-        evaluacionesRecientes: usuario.estudiante[0].evaluaciones,
-        alertasNoLeidas: usuario.estudiante[0].alertas
-      };
-    } else if (usuario.tipoUsuario === 'COORDINADOR' && usuario.coordinador[0]) {
-      datosRespuesta.coordinador = {
-        id: usuario.coordinador[0].id,
-        departamento: usuario.coordinador[0].departamento
-      };
-    }
-
-    res.status(200).json({
-      success: true,
-      data: { usuario: datosRespuesta }
-    });
-
   } catch (error) {
-    console.error('Error obteniendo perfil:', error);
+    console.error('Error procesando evaluación:', error);
     res.status(500).json({
       success: false,
       message: 'Error interno del servidor'
@@ -339,138 +548,8 @@ app.get('/api/auth/profile', authenticateToken, async (req, res) => {
   }
 });
 
-// PUT /api/auth/profile - Actualizar perfil
-app.put('/api/auth/profile', authenticateToken, async (req, res) => {
-  try {
-    const { nombreCompleto, carrera, semestre, departamento } = req.body;
-    const userId = req.user.id;
+// ===== RESTO DE RUTAS ESTUDIANTILES =====
 
-    // Actualizar datos base del usuario
-    const datosActualizacion = {};
-    if (nombreCompleto) {
-      datosActualizacion.nombreCompleto = nombreCompleto;
-    }
-
-    if (Object.keys(datosActualizacion).length > 0) {
-      await prisma.usuario.update({
-        where: { id: userId },
-        data: datosActualizacion
-      });
-    }
-
-    // Actualizar datos específicos según tipo de usuario
-    if (req.user.tipoUsuario === 'ESTUDIANTE' && req.user.estudiante) {
-      const datosEstudiante = {};
-      if (carrera) datosEstudiante.carrera = carrera;
-      if (semestre) datosEstudiante.semestre = parseInt(semestre);
-
-      if (Object.keys(datosEstudiante).length > 0) {
-        await prisma.estudiante.update({
-          where: { id: req.user.estudiante.id },
-          data: datosEstudiante
-        });
-      }
-    } else if (req.user.tipoUsuario === 'COORDINADOR' && req.user.coordinador) {
-      if (departamento) {
-        await prisma.coordinador.update({
-          where: { id: req.user.coordinador.id },
-          data: { departamento }
-        });
-      }
-    }
-
-    res.status(200).json({
-      success: true,
-      message: 'Perfil actualizado exitosamente'
-    });
-
-  } catch (error) {
-    console.error('Error actualizando perfil:', error);
-    res.status(500).json({
-      success: false,
-      message: 'Error interno del servidor'
-    });
-  }
-});
-
-// POST /api/auth/change-password - NUEVO ENDPOINT AGREGADO
-app.post('/api/auth/change-password', authenticateToken, async (req, res) => {
-  try {
-    const { contrasenaActual, contrasenaNueva } = req.body;
-
-    if (!contrasenaActual || !contrasenaNueva) {
-      return res.status(400).json({
-        success: false,
-        message: 'Contraseña actual y nueva son requeridas'
-      });
-    }
-
-    if (contrasenaNueva.length < 6) {
-      return res.status(400).json({
-        success: false,
-        message: 'La nueva contraseña debe tener al menos 6 caracteres'
-      });
-    }
-
-    // Obtener usuario actual
-    const usuario = await prisma.usuario.findUnique({
-      where: { id: req.user.id }
-    });
-
-    if (!usuario) {
-      return res.status(404).json({
-        success: false,
-        message: 'Usuario no encontrado'
-      });
-    }
-
-    // Verificar contraseña actual
-    const contrasenaValida = await bcrypt.compare(contrasenaActual, usuario.contrasenaHash);
-
-    if (!contrasenaValida) {
-      return res.status(400).json({
-        success: false,
-        message: 'La contraseña actual es incorrecta'
-      });
-    }
-
-    // Hash nueva contraseña
-    const nuevaContrasenaHash = await bcrypt.hash(contrasenaNueva, 12);
-
-    // Actualizar contraseña
-    await prisma.usuario.update({
-      where: { id: req.user.id },
-      data: { 
-        contrasenaHash: nuevaContrasenaHash,
-        fechaActualizacion: new Date()
-      }
-    });
-
-    res.status(200).json({
-      success: true,
-      message: 'Contraseña cambiada exitosamente'
-    });
-
-  } catch (error) {
-    console.error('Error cambiando contraseña:', error);
-    res.status(500).json({
-      success: false,
-      message: 'Error interno del servidor'
-    });
-  }
-});
-
-// POST /api/auth/logout
-app.post('/api/auth/logout', authenticateToken, (req, res) => {
-  res.status(200).json({
-    success: true,
-    message: 'Sesión cerrada exitosamente'
-  });
-});
-
-// ===== RUTAS PARA ESTUDIANTES =====
-
-// GET /api/students/dashboard - CORREGIDO
 app.get('/api/students/dashboard', authenticateToken, async (req, res) => {
   try {
     if (req.user.tipoUsuario !== 'ESTUDIANTE') {
@@ -479,9 +558,6 @@ app.get('/api/students/dashboard', authenticateToken, async (req, res) => {
         message: 'Acceso restringido a estudiantes'
       });
     }
-
-    console.log('🔍 Usuario autenticado:', req.user.id, req.user.nombreCompleto);
-    console.log('🎓 Estudiante ID:', req.user.estudiante?.id);
 
     const estudianteId = req.user.estudiante?.id;
 
@@ -492,7 +568,6 @@ app.get('/api/students/dashboard', authenticateToken, async (req, res) => {
       });
     }
 
-    // Obtener información del estudiante específico
     const estudiante = await prisma.estudiante.findUnique({
       where: { id: estudianteId },
       include: {
@@ -521,9 +596,7 @@ app.get('/api/students/dashboard', authenticateToken, async (req, res) => {
       });
     }
 
-    console.log('✅ Estudiante encontrado:', estudiante.usuario.nombreCompleto);
-
-    // Calcular estadísticas para ESTE estudiante específico
+    // Calcular estadísticas
     const totalEvaluaciones = await prisma.evaluacion.count({
       where: { estudianteId }
     });
@@ -541,7 +614,6 @@ app.get('/api/students/dashboard', authenticateToken, async (req, res) => {
       promedioEstres = evaluaciones.reduce((sum, ev) => sum + ev.puntajeEstres, 0) / evaluaciones.length;
       promedioBurnout = evaluaciones.reduce((sum, ev) => sum + ev.puntajeBurnout, 0) / evaluaciones.length;
       
-      // Calcular tendencia simple
       if (evaluaciones.length >= 2) {
         const ultimaEvaluacion = evaluaciones[0];
         const penultimaEvaluacion = evaluaciones[1];
@@ -603,15 +675,13 @@ app.get('/api/students/dashboard', authenticateToken, async (req, res) => {
       progresoSemanal: []
     };
 
-    console.log('📊 Dashboard data preparado para:', estudiante.usuario.nombreCompleto);
-
     res.status(200).json({
       success: true,
       data: dashboardData
     });
 
   } catch (error) {
-    console.error('❌ Error obteniendo dashboard del estudiante:', error);
+    console.error('Error obteniendo dashboard del estudiante:', error);
     res.status(500).json({
       success: false,
       message: 'Error interno del servidor'
@@ -619,7 +689,6 @@ app.get('/api/students/dashboard', authenticateToken, async (req, res) => {
   }
 });
 
-// Resto de rutas de estudiantes (sin cambios)...
 app.get('/api/students/evaluation/questions', authenticateToken, async (req, res) => {
   try {
     const preguntas = await prisma.preguntaEvaluacion.findMany({
@@ -636,8 +705,6 @@ app.get('/api/students/evaluation/questions', authenticateToken, async (req, res
         orden: true
       }
     });
-
-    console.log(`📊 Preguntas encontradas: ${preguntas.length}`);
 
     const preguntasEstres = preguntas
       .filter(p => p.categoria === 'ESTRES')
@@ -660,8 +727,6 @@ app.get('/api/students/evaluation/questions', authenticateToken, async (req, res
         peso: p.peso,
         orden: p.orden
       }));
-
-    console.log(`✅ Estrés: ${preguntasEstres.length}, Burnout: ${preguntasBurnout.length}`);
 
     res.status(200).json({
       success: true,
@@ -698,7 +763,7 @@ app.get('/api/students/evaluation/questions', authenticateToken, async (req, res
     });
 
   } catch (error) {
-    console.error('❌ Error obteniendo preguntas:', error);
+    console.error('Error obteniendo preguntas:', error);
     res.status(500).json({
       success: false,
       message: 'Error interno del servidor'
@@ -706,154 +771,6 @@ app.get('/api/students/evaluation/questions', authenticateToken, async (req, res
   }
 });
 
-// POST /api/students/evaluation/submit - CORREGIDO
-app.post('/api/students/evaluation/submit', authenticateToken, async (req, res) => {
-  try {
-    if (req.user.tipoUsuario !== 'ESTUDIANTE') {
-      return res.status(403).json({
-        success: false,
-        message: 'Acceso restringido a estudiantes'
-      });
-    }
-
-    console.log('📝 Procesando evaluación para usuario:', req.user.nombreCompleto);
-    console.log('Datos recibidos:', req.body);
-
-    const { respuestasEstres, respuestasBurnout, tiempoRespuesta } = req.body;
-    const estudianteId = req.user.estudiante?.id;
-
-    if (!estudianteId) {
-      return res.status(404).json({
-        success: false,
-        message: 'Perfil de estudiante no encontrado'
-      });
-    }
-
-    // Validar respuestas
-    if (!respuestasEstres || !respuestasBurnout || !Array.isArray(respuestasEstres) || !Array.isArray(respuestasBurnout)) {
-      return res.status(400).json({
-        success: false,
-        message: 'Se requieren respuestas válidas para ambas categorías'
-      });
-    }
-
-    // Verificar límite semanal para ESTE estudiante específico
-    const hoy = new Date();
-    const inicioSemana = new Date(hoy);
-    inicioSemana.setDate(hoy.getDate() - hoy.getDay());
-    inicioSemana.setHours(0, 0, 0, 0);
-
-    const evaluacionesSemana = await prisma.evaluacion.count({
-      where: {
-        estudianteId, // Filtrar por este estudiante específico
-        fechaEvaluacion: { gte: inicioSemana }
-      }
-    });
-
-    if (evaluacionesSemana >= 2) {
-      return res.status(429).json({
-        success: false,
-        message: 'Has alcanzado el límite de 2 evaluaciones por semana'
-      });
-    }
-
-    // Calcular puntajes simples (promedio * 2.5 para escala 0-10)
-    const puntajeEstres = Math.round((respuestasEstres.reduce((a, b) => a + b, 0) / respuestasEstres.length) * 2.5);
-    const puntajeBurnout = Math.round((respuestasBurnout.reduce((a, b) => a + b, 0) / respuestasBurnout.length) * 2.5);
-    const puntajeTotal = Math.round((puntajeEstres + puntajeBurnout) / 2);
-
-    // Determinar nivel de riesgo
-    let nivelRiesgo = 'BAJO';
-    if (puntajeTotal >= 7) {
-      nivelRiesgo = 'ALTO';
-    } else if (puntajeTotal >= 4) {
-      nivelRiesgo = 'MEDIO';
-    }
-
-    console.log(`📊 Puntajes calculados para ${req.user.nombreCompleto}: E:${puntajeEstres}, B:${puntajeBurnout}, T:${puntajeTotal}, R:${nivelRiesgo}`);
-
-    // Guardar evaluación para ESTE estudiante específico
-    const evaluacion = await prisma.evaluacion.create({
-      data: {
-        estudianteId, // Guardar para este estudiante específico
-        puntajeEstres,
-        puntajeBurnout,
-        puntajeTotal,
-        nivelRiesgo,
-        respuestas: {
-          estres: respuestasEstres,
-          burnout: respuestasBurnout,
-          tiempoRespuesta: tiempoRespuesta || null
-        }
-      }
-    });
-
-    // Actualizar estado del estudiante específico
-    await prisma.estudiante.update({
-      where: { id: estudianteId },
-      data: {
-        nivelEstresActual: puntajeEstres,
-        nivelBurnoutActual: puntajeBurnout,
-        estadoRiesgo: nivelRiesgo,
-        fechaUltimaEvaluacion: new Date()
-      }
-    });
-
-    // Generar alerta si es riesgo alto para ESTE estudiante
-    let alertaGenerada = false;
-    if (nivelRiesgo === 'ALTO') {
-      await prisma.alerta.create({
-        data: {
-          estudianteId, // Alerta para este estudiante específico
-          tipoAlerta: puntajeEstres >= puntajeBurnout ? 'Estrés Alto' : 'Burnout Alto',
-          severidad: 'ALTO',
-          mensaje: `${req.user.nombreCompleto} presenta niveles altos de ${puntajeEstres >= puntajeBurnout ? 'estrés' : 'burnout'} (${Math.max(puntajeEstres, puntajeBurnout)}/10)`
-        }
-      });
-      
-      alertaGenerada = true;
-    }
-
-    console.log(`✅ Evaluación procesada exitosamente para ${req.user.nombreCompleto}`);
-
-    res.status(201).json({
-      success: true,
-      message: 'Evaluación procesada exitosamente',
-      data: {
-        evaluacion: {
-          id: evaluacion.id,
-          fecha: evaluacion.fechaEvaluacion,
-          puntajes: {
-            stress: puntajeEstres,
-            burnout: puntajeBurnout,
-            total: puntajeTotal
-          },
-          nivelesRiesgo: {
-            overall: nivelRiesgo
-          }
-        },
-        analisis: {
-          summary: {
-            es: `Tu evaluación indica un nivel de riesgo ${nivelRiesgo} (${puntajeTotal}/10)`,
-            priority: nivelRiesgo === 'ALTO' ? 'urgent' : nivelRiesgo === 'MEDIO' ? 'moderate' : 'low'
-          }
-        },
-        recomendaciones: [],
-        alertaGenerada
-      }
-    });
-
-  } catch (error) {
-    console.error('❌ Error procesando evaluación:', error);
-    res.status(500).json({
-      success: false,
-      message: 'Error interno del servidor'
-    });
-  }
-});
-
-// Resto de rutas igual que antes...
-// GET /api/students/evaluation/history
 app.get('/api/students/evaluation/history', authenticateToken, async (req, res) => {
   try {
     if (req.user.tipoUsuario !== 'ESTUDIANTE') {
@@ -874,14 +791,14 @@ app.get('/api/students/evaluation/history', authenticateToken, async (req, res) 
     }
 
     const evaluaciones = await prisma.evaluacion.findMany({
-      where: { estudianteId }, // Solo las evaluaciones de ESTE estudiante
+      where: { estudianteId },
       orderBy: { fechaEvaluacion: 'desc' },
       take: parseInt(limite),
       skip: (parseInt(pagina) - 1) * parseInt(limite)
     });
 
     const total = await prisma.evaluacion.count({
-      where: { estudianteId } // Solo contar las de ESTE estudiante
+      where: { estudianteId }
     });
 
     res.status(200).json({
@@ -906,54 +823,8 @@ app.get('/api/students/evaluation/history', authenticateToken, async (req, res) 
   }
 });
 
-// GET /api/students/resources
-app.get('/api/students/resources', authenticateToken, async (req, res) => {
-  try {
-    if (req.user.tipoUsuario !== 'ESTUDIANTE') {
-      return res.status(403).json({
-        success: false,
-        message: 'Acceso restringido a estudiantes'
-      });
-    }
+// ===== RUTAS DE COORDINADORES =====
 
-    const recursos = await prisma.recurso.findMany({
-      where: { activo: true },
-      orderBy: [
-        { categoria: 'asc' },
-        { titulo: 'asc' }
-      ]
-    });
-
-    // Agrupar recursos por categoría
-    const recursosPorCategoria = recursos.reduce((acc, recurso) => {
-      const cat = recurso.categoria || 'General';
-      if (!acc[cat]) {
-        acc[cat] = [];
-      }
-      acc[cat].push(recurso);
-      return acc;
-    }, {});
-
-    res.status(200).json({
-      success: true,
-      data: {
-        categorias: Object.keys(recursosPorCategoria),
-        recursos: recursosPorCategoria
-      }
-    });
-
-  } catch (error) {
-    console.error('Error obteniendo recursos:', error);
-    res.status(500).json({
-      success: false,
-      message: 'Error interno del servidor'
-    });
-  }
-});
-
-// ===== RUTAS PARA COORDINADORES =====
-
-// GET /api/coordinators/dashboard - CORREGIDO
 app.get('/api/coordinators/dashboard', authenticateToken, async (req, res) => {
   try {
     if (req.user.tipoUsuario !== 'COORDINADOR') {
@@ -963,28 +834,17 @@ app.get('/api/coordinators/dashboard', authenticateToken, async (req, res) => {
       });
     }
 
-    console.log('🔍 Calculando estadísticas del dashboard para coordinador...');
-
-    // Estadísticas generales
     const totalEstudiantes = await prisma.estudiante.count();
-    console.log(`📊 Total estudiantes: ${totalEstudiantes}`);
     
     const estudiantesPorRiesgo = await prisma.estudiante.groupBy({
       by: ['estadoRiesgo'],
       _count: true
     });
-    console.log('📊 Estudiantes por riesgo:', estudiantesPorRiesgo);
 
-    // CORREGIDO: Contar TODAS las alertas de riesgo alto (no solo no leídas)
     const alertasRiesgoAlto = await prisma.alerta.count({
-      where: { 
-        severidad: 'ALTO'
-        // Removido el filtro de estaLeida para contar todas las alertas de riesgo alto
-      }
+      where: { severidad: 'ALTO' }
     });
-    console.log(`🚨 Alertas de riesgo alto: ${alertasRiesgoAlto}`);
 
-    // CORREGIDO: Calcular tasa de respuesta semanal real
     const hoy = new Date();
     const inicioSemana = new Date(hoy);
     inicioSemana.setDate(hoy.getDate() - hoy.getDay());
@@ -995,16 +855,11 @@ app.get('/api/coordinators/dashboard', authenticateToken, async (req, res) => {
         fechaEvaluacion: { gte: inicioSemana }
       }
     });
-    console.log(`📝 Evaluaciones esta semana: ${evaluacionesSemana}`);
 
-    // Calcular tasa de respuesta (evaluaciones esta semana / total estudiantes * 100)
-    // Pero limitarla a máximo 100%
     const tasaRespuestaSemanal = totalEstudiantes > 0 
       ? Math.min(100, Math.round((evaluacionesSemana / totalEstudiantes) * 100))
       : 0;
-    console.log(`📈 Tasa de respuesta semanal: ${tasaRespuestaSemanal}%`);
 
-    // CORREGIDO: Calcular promedios reales de estrés y burnout
     const estadisticasEstres = await prisma.evaluacion.aggregate({
       _avg: {
         puntajeEstres: true,
@@ -1014,9 +869,7 @@ app.get('/api/coordinators/dashboard', authenticateToken, async (req, res) => {
 
     const promedioEstres = estadisticasEstres._avg.puntajeEstres || 0;
     const promedioBurnout = estadisticasEstres._avg.puntajeBurnout || 0;
-    console.log(`📊 Promedios - Estrés: ${promedioEstres}, Burnout: ${promedioBurnout}`);
 
-    // Estudiantes de riesgo alto
     const estudiantesRiesgoAlto = await prisma.estudiante.findMany({
       where: { estadoRiesgo: 'ALTO' },
       include: {
@@ -1026,9 +879,7 @@ app.get('/api/coordinators/dashboard', authenticateToken, async (req, res) => {
       },
       take: 10
     });
-    console.log(`👥 Estudiantes de riesgo alto encontrados: ${estudiantesRiesgoAlto.length}`);
 
-    // Alertas recientes
     const alertasRecientes = await prisma.alerta.findMany({
       include: {
         estudiante: {
@@ -1042,9 +893,7 @@ app.get('/api/coordinators/dashboard', authenticateToken, async (req, res) => {
       orderBy: { fechaCreacion: 'desc' },
       take: 10
     });
-    console.log(`📢 Alertas recientes encontradas: ${alertasRecientes.length}`);
 
-    // Mapear alertas recientes con el formato correcto
     const alertasFormateadas = alertasRecientes.map(alerta => ({
       ...alerta,
       estudiante: {
@@ -1063,17 +912,15 @@ app.get('/api/coordinators/dashboard', authenticateToken, async (req, res) => {
           acc[item.estadoRiesgo.toLowerCase()] = item._count;
           return acc;
         }, { alto: 0, medio: 0, bajo: 0 }),
-        alertasRiesgoAlto, // Ahora usa el valor corregido
-        tasaRespuestaSemanal, // Ahora usa el valor calculado
-        promedioEstres: Math.round(promedioEstres * 10) / 10, // Redondeado a 1 decimal
+        alertasRiesgoAlto,
+        tasaRespuestaSemanal,
+        promedioEstres: Math.round(promedioEstres * 10) / 10,
         promedioBurnout: Math.round(promedioBurnout * 10) / 10
       },
       estudiantesRiesgoAlto,
       alertasRecientes: alertasFormateadas,
-      tendenciasSemanales: [] // Podrías implementar esto más adelante
+      tendenciasSemanales: []
     };
-
-    console.log('✅ Dashboard data calculado exitosamente');
 
     res.status(200).json({
       success: true,
@@ -1081,7 +928,7 @@ app.get('/api/coordinators/dashboard', authenticateToken, async (req, res) => {
     });
 
   } catch (error) {
-    console.error('❌ Error obteniendo dashboard del coordinador:', error);
+    console.error('Error obteniendo dashboard del coordinador:', error);
     res.status(500).json({
       success: false,
       message: 'Error interno del servidor'
@@ -1089,8 +936,6 @@ app.get('/api/coordinators/dashboard', authenticateToken, async (req, res) => {
   }
 });
 
-
-// GET /api/coordinators/students
 app.get('/api/coordinators/students', authenticateToken, async (req, res) => {
   try {
     if (req.user.tipoUsuario !== 'COORDINADOR') {
@@ -1153,88 +998,6 @@ app.get('/api/coordinators/students', authenticateToken, async (req, res) => {
   }
 });
 
-// GET /api/coordinators/students/:studentId
-app.get('/api/coordinators/students/:studentId', authenticateToken, async (req, res) => {
-  try {
-    if (req.user.tipoUsuario !== 'COORDINADOR') {
-      return res.status(403).json({
-        success: false,
-        message: 'Acceso restringido a coordinadores'
-      });
-    }
-
-    const { studentId } = req.params;
-
-    const estudiante = await prisma.estudiante.findUnique({
-      where: { id: parseInt(studentId) },
-      include: {
-        usuario: {
-          select: {
-            nombreCompleto: true,
-            correo: true,
-            fechaCreacion: true
-          }
-        },
-        evaluaciones: {
-          orderBy: { fechaEvaluacion: 'desc' },
-          take: 20
-        },
-        alertas: {
-          orderBy: { fechaCreacion: 'desc' },
-          take: 10
-        }
-      }
-    });
-
-    if (!estudiante) {
-      return res.status(404).json({
-        success: false,
-        message: 'Estudiante no encontrado'
-      });
-    }
-
-    const respuesta = {
-      estudiante: {
-        id: estudiante.id,
-        nombreCompleto: estudiante.usuario.nombreCompleto,
-        correo: estudiante.usuario.correo,
-        carrera: estudiante.carrera,
-        semestre: estudiante.semestre,
-        estadoActual: {
-          nivelEstres: estudiante.nivelEstresActual,
-          nivelBurnout: estudiante.nivelBurnoutActual,
-          estadoRiesgo: estudiante.estadoRiesgo,
-          ultimaEvaluacion: estudiante.fechaUltimaEvaluacion
-        },
-        fechaRegistro: estudiante.usuario.fechaCreacion
-      },
-      evaluaciones: estudiante.evaluaciones,
-      alertas: estudiante.alertas,
-      estadisticas: {
-        totalEvaluaciones: estudiante.evaluaciones.length,
-        frecuenciaEvaluacion: 0.5
-      },
-      analisisTendencia: {
-        direccion: 'estable',
-        confianza: 75
-      }
-    };
-
-    res.status(200).json({
-      success: true,
-      data: respuesta
-    });
-
-  } catch (error) {
-    console.error('Error obteniendo detalles del estudiante:', error);
-    res.status(500).json({
-      success: false,
-      message: 'Error interno del servidor'
-    });
-  }
-});
-
-// GET /api/coordinators/alerts
 app.get('/api/coordinators/alerts', authenticateToken, async (req, res) => {
   try {
     if (req.user.tipoUsuario !== 'COORDINADOR') {
@@ -1295,7 +1058,6 @@ app.get('/api/coordinators/alerts', authenticateToken, async (req, res) => {
   }
 });
 
-// PUT /api/coordinators/alerts/mark-read
 app.put('/api/coordinators/alerts/mark-read', authenticateToken, async (req, res) => {
   try {
     if (req.user.tipoUsuario !== 'COORDINADOR') {
@@ -1314,9 +1076,6 @@ app.put('/api/coordinators/alerts/mark-read', authenticateToken, async (req, res
       });
     }
 
-    console.log('🔄 Marcando alertas como leídas:', alertIds);
-
-    // Convertir IDs a enteros y validar
     const validIds = alertIds.map(id => parseInt(id)).filter(id => !isNaN(id));
     
     if (validIds.length === 0) {
@@ -1326,8 +1085,6 @@ app.put('/api/coordinators/alerts/mark-read', authenticateToken, async (req, res
       });
     }
 
-    console.log('✅ IDs válidos:', validIds);
-
     const resultado = await prisma.alerta.updateMany({
       where: {
         id: {
@@ -1335,12 +1092,9 @@ app.put('/api/coordinators/alerts/mark-read', authenticateToken, async (req, res
         }
       },
       data: {
-        estaLeida: true,
-        fechaLeida: new Date()
+        estaLeida: true
       }
     });
-
-    console.log('📊 Resultado de actualización:', resultado);
 
     res.status(200).json({
       success: true,
@@ -1349,135 +1103,7 @@ app.put('/api/coordinators/alerts/mark-read', authenticateToken, async (req, res
     });
 
   } catch (error) {
-    console.error('❌ Error completo marcando alertas:', {
-      message: error.message,
-      stack: error.stack,
-      name: error.name
-    });
-    
-    res.status(500).json({
-      success: false,
-      message: `Error interno del servidor: ${error.message}`
-    });
-  }
-});
-
-// POST /api/coordinators/reports/pdf - NUEVO ENDPOINT AGREGADO
-app.post('/api/coordinators/reports/pdf', authenticateToken, async (req, res) => {
-  try {
-    if (req.user.tipoUsuario !== 'COORDINADOR') {
-      return res.status(403).json({
-        success: false,
-        message: 'Acceso restringido a coordinadores'
-      });
-    }
-
-    const { 
-      fechaInicio = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000),
-      fechaFin = new Date(),
-      incluirDetalles = true,
-      tipoReporte = 'completo'
-    } = req.body;
-
-    // Obtener estadísticas generales
-    const totalEstudiantes = await prisma.estudiante.count();
-    
-    const estudiantesPorRiesgo = await prisma.estudiante.groupBy({
-      by: ['estadoRiesgo'],
-      _count: true
-    });
-
-    const alertasRiesgoAlto = await prisma.alerta.count({
-      where: { severidad: 'ALTO' }
-    });
-    
-    // Obtener lista de estudiantes
-    const estudiantes = await prisma.estudiante.findMany({
-      include: {
-        usuario: {
-          select: {
-            nombreCompleto: true,
-            correo: true
-          }
-        },
-        evaluaciones: {
-          orderBy: { fechaEvaluacion: 'desc' },
-          take: 1
-        }
-      },
-      orderBy: {
-        estadoRiesgo: 'desc'
-      }
-    });
-
-    // Obtener alertas recientes
-    const alertas = await prisma.alerta.findMany({
-      where: {
-        fechaCreacion: {
-          gte: new Date(fechaInicio),
-          lte: new Date(fechaFin)
-        }
-      },
-      include: {
-        estudiante: {
-          include: {
-            usuario: {
-              select: { nombreCompleto: true }
-            }
-          }
-        }
-      },
-      orderBy: { fechaCreacion: 'desc' }
-    });
-
-    // Crear contenido del reporte
-    const reporteData = {
-      metadatos: {
-        titulo: 'Reporte de Bienestar Estudiantil',
-        fechaGeneracion: new Date().toISOString(),
-        generadoPor: req.user.nombreCompleto,
-        periodo: {
-          inicio: fechaInicio,
-          fin: fechaFin
-        },
-        tipoReporte
-      },
-      resumen: {
-        totalEstudiantes,
-        estudiantesRiesgoAlto: estudiantes.filter(e => e.estadoRiesgo === 'ALTO').length,
-        estudiantesRiesgoMedio: estudiantes.filter(e => e.estadoRiesgo === 'MEDIO').length,
-        estudiantesRiesgoBajo: estudiantes.filter(e => e.estadoRiesgo === 'BAJO').length,
-        totalAlertas: alertas.length,
-        alertasAltas: alertas.filter(a => a.severidad === 'ALTO').length
-      },
-      estudiantes: estudiantes.map(est => ({
-        id: est.id,
-        nombre: est.usuario.nombreCompleto,
-        correo: est.usuario.correo,
-        carrera: est.carrera,
-        semestre: est.semestre,
-        estadoRiesgo: est.estadoRiesgo,
-        nivelEstres: est.nivelEstresActual,
-        nivelBurnout: est.nivelBurnoutActual,
-        ultimaEvaluacion: est.evaluaciones[0]?.fechaEvaluacion || null
-      })),
-      alertas: alertas.map(alerta => ({
-        fecha: alerta.fechaCreacion,
-        estudiante: alerta.estudiante.usuario.nombreCompleto,
-        tipo: alerta.tipoAlerta,
-        severidad: alerta.severidad,
-        mensaje: alerta.mensaje
-      }))
-    };
-
-    res.status(200).json({
-      success: true,
-      message: 'Reporte generado exitosamente',
-      data: reporteData
-    });
-
-  } catch (error) {
-    console.error('Error generando reporte PDF:', error);
+    console.error('Error marcando alertas:', error);
     res.status(500).json({
       success: false,
       message: 'Error interno del servidor'
@@ -1485,133 +1111,41 @@ app.post('/api/coordinators/reports/pdf', authenticateToken, async (req, res) =>
   }
 });
 
-// GET /api/coordinators/export/students-pdf - NUEVO ENDPOINT AGREGADO
-app.get('/api/coordinators/export/students-pdf', authenticateToken, async (req, res) => {
+// ===== RUTAS DE PRUEBA PARA DEBUG =====
+
+app.get('/api/test/burnout-quick', authenticateToken, async (req, res) => {
   try {
-    if (req.user.tipoUsuario !== 'COORDINADOR') {
-      return res.status(403).json({
-        success: false,
-        message: 'Acceso restringido a coordinadores'
-      });
-    }
-
-    const { 
-      filtroRiesgo, 
-      filtroCarrera,
-      busqueda,
-      incluirDetalles = true 
-    } = req.query;
-
-    // Construir filtros
-    const filtros = {};
+    console.log('\n=== TEST RAPIDO BURNOUT ===');
     
-    if (filtroRiesgo) {
-      filtros.estadoRiesgo = filtroRiesgo;
-    }
-    
-    if (filtroCarrera) {
-      filtros.carrera = {
-        contains: filtroCarrera,
-        mode: 'insensitive'
-      };
-    }
-
-    let filtroUsuario = {};
-    if (busqueda) {
-      filtroUsuario = {
-        nombreCompleto: {
-          contains: busqueda,
-          mode: 'insensitive'
-        }
-      };
-    }
-
-    // Obtener estudiantes
-    const estudiantes = await prisma.estudiante.findMany({
-      where: {
-        ...filtros,
-        usuario: filtroUsuario
-      },
-      include: {
-        usuario: {
-          select: {
-            nombreCompleto: true,
-            correo: true,
-            fechaCreacion: true
-          }
-        },
-        evaluaciones: {
-          orderBy: { fechaEvaluacion: 'desc' },
-          take: incluirDetalles ? 5 : 1,
-          select: {
-            fechaEvaluacion: true,
-            puntajeEstres: true,
-            puntajeBurnout: true,
-            nivelRiesgo: true
-          }
-        },
-        alertas: incluirDetalles ? {
-          where: { estaLeida: false },
-          select: {
-            tipoAlerta: true,
-            severidad: true,
-            fechaCreacion: true
-          }
-        } : undefined
-      },
-      orderBy: [
-        { estadoRiesgo: 'desc' },
-        { usuario: { nombreCompleto: 'asc' } }
-      ]
+    const resultado = riskCalculator.processEvaluation({
+      stressAnswers: [1, 1, 1, 1, 1],
+      burnoutAnswers: [4, 4, 4, 4, 4],
+      stressWeights: [1, 1, 1, 1, 1],
+      burnoutWeights: [1, 1, 1, 1, 1]
     });
-
-    // Preparar datos para el PDF
-    const estudiantesPDF = estudiantes.map(est => ({
-      nombre: est.usuario.nombreCompleto,
-      correo: est.usuario.correo,
-      carrera: est.carrera,
-      semestre: est.semestre,
-      estadoRiesgo: est.estadoRiesgo,
-      nivelEstres: est.nivelEstresActual || 0,
-      nivelBurnout: est.nivelBurnoutActual || 0,
-      ultimaEvaluacion: est.evaluaciones[0]?.fechaEvaluacion || null,
-      totalEvaluaciones: est.evaluaciones.length,
-      alertasActivas: incluirDetalles ? est.alertas?.length || 0 : 0,
-      fechaRegistro: est.usuario.fechaCreacion
-    }));
-
-    const reportData = {
-      titulo: 'Lista de Estudiantes - Sistema de Bienestar',
-      fechaGeneracion: new Date().toISOString(),
-      generadoPor: req.user.nombreCompleto,
-      filtros: {
-        riesgo: filtroRiesgo || 'Todos',
-        carrera: filtroCarrera || 'Todas',
-        busqueda: busqueda || 'Sin filtro'
-      },
-      total: estudiantesPDF.length,
-      estudiantes: estudiantesPDF,
-      resumen: {
-        riesgoAlto: estudiantesPDF.filter(e => e.estadoRiesgo === 'ALTO').length,
-        riesgoMedio: estudiantesPDF.filter(e => e.estadoRiesgo === 'MEDIO').length,
-        riesgoBajo: estudiantesPDF.filter(e => e.estadoRiesgo === 'BAJO').length,
-        promedioEstres: estudiantesPDF.reduce((sum, e) => sum + e.nivelEstres, 0) / estudiantesPDF.length,
-        promedioBurnout: estudiantesPDF.reduce((sum, e) => sum + e.nivelBurnout, 0) / estudiantesPDF.length
-      }
-    };
-
-    res.status(200).json({
+    
+    console.log('Puntajes:', resultado.scores);
+    console.log('Niveles riesgo:', resultado.riskLevels);
+    
+    const alertInfo = riskCalculator.shouldGenerateAlert(
+      resultado.riskLevels.overall,
+      resultado.scores.stress,
+      resultado.scores.burnout
+    );
+    
+    console.log('Alert info:', alertInfo);
+    
+    res.json({
       success: true,
-      message: 'Lista de estudiantes exportada exitosamente',
-      data: reportData
+      puntajes: resultado.scores,
+      niveles: resultado.riskLevels,
+      alertas: alertInfo,
+      mensaje: alertInfo.needed ? 'ALERTAS GENERADAS' : 'NO HAY ALERTAS - PROBLEMA DETECTADO'
     });
-
+    
   } catch (error) {
-    console.error('Error exportando estudiantes:', error);
-    res.status(500).json({
-      success: false,
-      message: 'Error interno del servidor'
-    });
+    console.error('Error:', error);
+    res.status(500).json({ error: error.message });
   }
 });
 
@@ -1630,11 +1164,10 @@ app.get('/api/db-test', async (req, res) => {
     const usuarios = await prisma.usuario.count();
     const estudiantes = await prisma.estudiante.count();
     const preguntas = await prisma.preguntaEvaluacion.count();
-    const recursos = await prisma.recurso.count();
     
     res.json({
       status: 'BD conectada',
-      datos: { usuarios, estudiantes, preguntas, recursos },
+      datos: { usuarios, estudiantes, preguntas },
       message: 'Base de datos funcionando correctamente'
     });
   } catch (error) {
@@ -1645,10 +1178,10 @@ app.get('/api/db-test', async (req, res) => {
   }
 });
 
-// ===== HANDLERS DE ERROR =====
+// ===== ERROR HANDLERS =====
 
 app.use('*', (req, res) => {
-  console.log('❌ Endpoint no encontrado:', req.method, req.originalUrl);
+  console.log('Endpoint no encontrado:', req.method, req.originalUrl);
   res.status(404).json({ 
     message: 'Endpoint no encontrado',
     path: req.originalUrl,
@@ -1657,7 +1190,7 @@ app.use('*', (req, res) => {
 });
 
 app.use((err, req, res, next) => {
-  console.error('❌ Error del servidor:', err.stack);
+  console.error('Error del servidor:', err.stack);
   res.status(500).json({ 
     message: 'Error interno del servidor',
     error: process.env.NODE_ENV === 'development' ? err.message : {}
@@ -1667,14 +1200,14 @@ app.use((err, req, res, next) => {
 // ===== INICIAR SERVIDOR =====
 
 app.listen(PORT, () => {
-  console.log(`🚀 Servidor corriendo en puerto ${PORT}`);
-  console.log(`📊 API disponible en http://localhost:${PORT}/api`);
-  console.log(`🏥 Health check: http://localhost:${PORT}/api/health`);
-  console.log(`🗄️ DB test: http://localhost:${PORT}/api/db-test`);
+  console.log(`Servidor corriendo en puerto ${PORT}`);
+  console.log(`API disponible en http://localhost:${PORT}/api`);
+  console.log(`Health check: http://localhost:${PORT}/api/health`);
+  console.log(`Test burnout: http://localhost:${PORT}/api/test/burnout-quick`);
 });
 
 process.on('SIGINT', async () => {
-  console.log('\n🛑 Cerrando servidor...');
+  console.log('\nCerrando servidor...');
   await prisma.$disconnect();
   process.exit(0);
 });
