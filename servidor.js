@@ -265,6 +265,8 @@ app.post('/api/auth/login', async (req, res) => {
   }
 });
 
+
+
 // ===== RUTA FALTANTE - MUY IMPORTANTE =====
 // GET /api/auth/profile - Obtener perfil del usuario autenticado
 app.get('/api/auth/profile', authenticateToken, async (req, res) => {
@@ -384,6 +386,73 @@ app.put('/api/auth/profile', authenticateToken, async (req, res) => {
 
   } catch (error) {
     console.error('Error actualizando perfil:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Error interno del servidor'
+    });
+  }
+});
+
+// POST /api/auth/change-password - NUEVO ENDPOINT AGREGADO
+app.post('/api/auth/change-password', authenticateToken, async (req, res) => {
+  try {
+    const { contrasenaActual, contrasenaNueva } = req.body;
+
+    if (!contrasenaActual || !contrasenaNueva) {
+      return res.status(400).json({
+        success: false,
+        message: 'Contraseña actual y nueva son requeridas'
+      });
+    }
+
+    if (contrasenaNueva.length < 6) {
+      return res.status(400).json({
+        success: false,
+        message: 'La nueva contraseña debe tener al menos 6 caracteres'
+      });
+    }
+
+    // Obtener usuario actual
+    const usuario = await prisma.usuario.findUnique({
+      where: { id: req.user.id }
+    });
+
+    if (!usuario) {
+      return res.status(404).json({
+        success: false,
+        message: 'Usuario no encontrado'
+      });
+    }
+
+    // Verificar contraseña actual
+    const contrasenaValida = await bcrypt.compare(contrasenaActual, usuario.contrasenaHash);
+
+    if (!contrasenaValida) {
+      return res.status(400).json({
+        success: false,
+        message: 'La contraseña actual es incorrecta'
+      });
+    }
+
+    // Hash nueva contraseña
+    const nuevaContrasenaHash = await bcrypt.hash(contrasenaNueva, 12);
+
+    // Actualizar contraseña
+    await prisma.usuario.update({
+      where: { id: req.user.id },
+      data: { 
+        contrasenaHash: nuevaContrasenaHash,
+        fechaActualizacion: new Date()
+      }
+    });
+
+    res.status(200).json({
+      success: true,
+      message: 'Contraseña cambiada exitosamente'
+    });
+
+  } catch (error) {
+    console.error('Error cambiando contraseña:', error);
     res.status(500).json({
       success: false,
       message: 'Error interno del servidor'
@@ -1219,6 +1288,259 @@ app.get('/api/coordinators/alerts', authenticateToken, async (req, res) => {
 
   } catch (error) {
     console.error('Error obteniendo alertas:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Error interno del servidor'
+    });
+  }
+});
+
+// POST /api/coordinators/reports/pdf - NUEVO ENDPOINT AGREGADO
+app.post('/api/coordinators/reports/pdf', authenticateToken, async (req, res) => {
+  try {
+    if (req.user.tipoUsuario !== 'COORDINADOR') {
+      return res.status(403).json({
+        success: false,
+        message: 'Acceso restringido a coordinadores'
+      });
+    }
+
+    const { 
+      fechaInicio = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000),
+      fechaFin = new Date(),
+      incluirDetalles = true,
+      tipoReporte = 'completo'
+    } = req.body;
+
+    // Obtener estadísticas generales
+    const totalEstudiantes = await prisma.estudiante.count();
+    
+    const estudiantesPorRiesgo = await prisma.estudiante.groupBy({
+      by: ['estadoRiesgo'],
+      _count: true
+    });
+
+    const alertasRiesgoAlto = await prisma.alerta.count({
+      where: { severidad: 'ALTO' }
+    });
+    
+    // Obtener lista de estudiantes
+    const estudiantes = await prisma.estudiante.findMany({
+      include: {
+        usuario: {
+          select: {
+            nombreCompleto: true,
+            correo: true
+          }
+        },
+        evaluaciones: {
+          orderBy: { fechaEvaluacion: 'desc' },
+          take: 1
+        }
+      },
+      orderBy: {
+        estadoRiesgo: 'desc'
+      }
+    });
+
+    // Obtener alertas recientes
+    const alertas = await prisma.alerta.findMany({
+      where: {
+        fechaCreacion: {
+          gte: new Date(fechaInicio),
+          lte: new Date(fechaFin)
+        }
+      },
+      include: {
+        estudiante: {
+          include: {
+            usuario: {
+              select: { nombreCompleto: true }
+            }
+          }
+        }
+      },
+      orderBy: { fechaCreacion: 'desc' }
+    });
+
+    // Crear contenido del reporte
+    const reporteData = {
+      metadatos: {
+        titulo: 'Reporte de Bienestar Estudiantil',
+        fechaGeneracion: new Date().toISOString(),
+        generadoPor: req.user.nombreCompleto,
+        periodo: {
+          inicio: fechaInicio,
+          fin: fechaFin
+        },
+        tipoReporte
+      },
+      resumen: {
+        totalEstudiantes,
+        estudiantesRiesgoAlto: estudiantes.filter(e => e.estadoRiesgo === 'ALTO').length,
+        estudiantesRiesgoMedio: estudiantes.filter(e => e.estadoRiesgo === 'MEDIO').length,
+        estudiantesRiesgoBajo: estudiantes.filter(e => e.estadoRiesgo === 'BAJO').length,
+        totalAlertas: alertas.length,
+        alertasAltas: alertas.filter(a => a.severidad === 'ALTO').length
+      },
+      estudiantes: estudiantes.map(est => ({
+        id: est.id,
+        nombre: est.usuario.nombreCompleto,
+        correo: est.usuario.correo,
+        carrera: est.carrera,
+        semestre: est.semestre,
+        estadoRiesgo: est.estadoRiesgo,
+        nivelEstres: est.nivelEstresActual,
+        nivelBurnout: est.nivelBurnoutActual,
+        ultimaEvaluacion: est.evaluaciones[0]?.fechaEvaluacion || null
+      })),
+      alertas: alertas.map(alerta => ({
+        fecha: alerta.fechaCreacion,
+        estudiante: alerta.estudiante.usuario.nombreCompleto,
+        tipo: alerta.tipoAlerta,
+        severidad: alerta.severidad,
+        mensaje: alerta.mensaje
+      }))
+    };
+
+    res.status(200).json({
+      success: true,
+      message: 'Reporte generado exitosamente',
+      data: reporteData
+    });
+
+  } catch (error) {
+    console.error('Error generando reporte PDF:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Error interno del servidor'
+    });
+  }
+});
+
+// GET /api/coordinators/export/students-pdf - NUEVO ENDPOINT AGREGADO
+app.get('/api/coordinators/export/students-pdf', authenticateToken, async (req, res) => {
+  try {
+    if (req.user.tipoUsuario !== 'COORDINADOR') {
+      return res.status(403).json({
+        success: false,
+        message: 'Acceso restringido a coordinadores'
+      });
+    }
+
+    const { 
+      filtroRiesgo, 
+      filtroCarrera,
+      busqueda,
+      incluirDetalles = true 
+    } = req.query;
+
+    // Construir filtros
+    const filtros = {};
+    
+    if (filtroRiesgo) {
+      filtros.estadoRiesgo = filtroRiesgo;
+    }
+    
+    if (filtroCarrera) {
+      filtros.carrera = {
+        contains: filtroCarrera,
+        mode: 'insensitive'
+      };
+    }
+
+    let filtroUsuario = {};
+    if (busqueda) {
+      filtroUsuario = {
+        nombreCompleto: {
+          contains: busqueda,
+          mode: 'insensitive'
+        }
+      };
+    }
+
+    // Obtener estudiantes
+    const estudiantes = await prisma.estudiante.findMany({
+      where: {
+        ...filtros,
+        usuario: filtroUsuario
+      },
+      include: {
+        usuario: {
+          select: {
+            nombreCompleto: true,
+            correo: true,
+            fechaCreacion: true
+          }
+        },
+        evaluaciones: {
+          orderBy: { fechaEvaluacion: 'desc' },
+          take: incluirDetalles ? 5 : 1,
+          select: {
+            fechaEvaluacion: true,
+            puntajeEstres: true,
+            puntajeBurnout: true,
+            nivelRiesgo: true
+          }
+        },
+        alertas: incluirDetalles ? {
+          where: { estaLeida: false },
+          select: {
+            tipoAlerta: true,
+            severidad: true,
+            fechaCreacion: true
+          }
+        } : undefined
+      },
+      orderBy: [
+        { estadoRiesgo: 'desc' },
+        { usuario: { nombreCompleto: 'asc' } }
+      ]
+    });
+
+    // Preparar datos para el PDF
+    const estudiantesPDF = estudiantes.map(est => ({
+      nombre: est.usuario.nombreCompleto,
+      correo: est.usuario.correo,
+      carrera: est.carrera,
+      semestre: est.semestre,
+      estadoRiesgo: est.estadoRiesgo,
+      nivelEstres: est.nivelEstresActual || 0,
+      nivelBurnout: est.nivelBurnoutActual || 0,
+      ultimaEvaluacion: est.evaluaciones[0]?.fechaEvaluacion || null,
+      totalEvaluaciones: est.evaluaciones.length,
+      alertasActivas: incluirDetalles ? est.alertas?.length || 0 : 0,
+      fechaRegistro: est.usuario.fechaCreacion
+    }));
+
+    const reportData = {
+      titulo: 'Lista de Estudiantes - Sistema de Bienestar',
+      fechaGeneracion: new Date().toISOString(),
+      generadoPor: req.user.nombreCompleto,
+      filtros: {
+        riesgo: filtroRiesgo || 'Todos',
+        carrera: filtroCarrera || 'Todas',
+        busqueda: busqueda || 'Sin filtro'
+      },
+      total: estudiantesPDF.length,
+      estudiantes: estudiantesPDF,
+      resumen: {
+        riesgoAlto: estudiantesPDF.filter(e => e.estadoRiesgo === 'ALTO').length,
+        riesgoMedio: estudiantesPDF.filter(e => e.estadoRiesgo === 'MEDIO').length,
+        riesgoBajo: estudiantesPDF.filter(e => e.estadoRiesgo === 'BAJO').length,
+        promedioEstres: estudiantesPDF.reduce((sum, e) => sum + e.nivelEstres, 0) / estudiantesPDF.length,
+        promedioBurnout: estudiantesPDF.reduce((sum, e) => sum + e.nivelBurnout, 0) / estudiantesPDF.length
+      }
+    };
+
+    res.status(200).json({
+      success: true,
+      message: 'Lista de estudiantes exportada exitosamente',
+      data: reportData
+    });
+
+  } catch (error) {
+    console.error('Error exportando estudiantes:', error);
     res.status(500).json({
       success: false,
       message: 'Error interno del servidor'

@@ -54,6 +54,27 @@ const MiPerfil: React.FC = () => {
   });
   const [cargandoContrasena, setCargandoContrasena] = useState(false);
   const [cargandoEliminar, setCargandoEliminar] = useState(false);
+  
+  // Estados para notificaciones
+  const [notificacion, setNotificacion] = useState<{
+    tipo: 'success' | 'error' | 'info';
+    mensaje: string;
+  } | null>(null);
+
+  // Auto-ocultar notificación después de 3 segundos
+  useEffect(() => {
+    if (notificacion) {
+      const timer = setTimeout(() => {
+        setNotificacion(null);
+      }, 3000);
+      return () => clearTimeout(timer);
+    }
+  }, [notificacion]);
+
+  // Función para mostrar notificaciones
+  const mostrarNotificacion = (tipo: 'success' | 'error' | 'info', mensaje: string) => {
+    setNotificacion({ tipo, mensaje });
+  };
 
   // Redireccionar si no está autenticado
   useEffect(() => {
@@ -241,7 +262,7 @@ const MiPerfil: React.FC = () => {
           contrasenaNueva: '',
           confirmarContrasena: ''
         });
-        alert('Contraseña cambiada exitosamente');
+        mostrarNotificacion('success', 'Contraseña cambiada exitosamente');
       } else {
         throw new Error(response.message || 'Error al cambiar la contraseña');
       }
@@ -282,11 +303,13 @@ const MiPerfil: React.FC = () => {
       // Simular eliminación de cuenta (implementar cuando esté el endpoint)
       await new Promise(resolve => setTimeout(resolve, 2000));
       
-      alert('Tu cuenta ha sido programada para eliminación. Se procesará en las próximas 24 horas.');
+      mostrarNotificacion('info', 'Tu cuenta ha sido programada para eliminación. Se procesará en las próximas 24 horas.');
       
       // Cerrar sesión después de programar eliminación
-      await logout();
-      navigate('/login');
+      setTimeout(async () => {
+        await logout();
+        navigate('/login');
+      }, 1500);
       
     } catch (err: any) {
       setError(err.message || 'Error al procesar la eliminación de cuenta');
@@ -343,11 +366,11 @@ Período analizado: ${new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toLocaleDa
         document.body.removeChild(a);
         URL.revokeObjectURL(url);
 
-        alert('Reporte generado y descargado exitosamente');
+        mostrarNotificacion('success', 'Reporte generado y descargado exitosamente');
       }
     } catch (error) {
       console.error('Error generando reporte:', error);
-      alert('Error al generar el reporte. Por favor intenta nuevamente.');
+      mostrarNotificacion('error', 'Error al generar el reporte. Por favor intenta nuevamente.');
     }
   };
 
@@ -403,11 +426,11 @@ Documento generado automáticamente por el Sistema de Bienestar Estudiantil`;
         document.body.removeChild(a);
         URL.revokeObjectURL(url);
 
-        alert('Lista de estudiantes exportada exitosamente');
+        mostrarNotificacion('success', 'Lista de estudiantes exportada exitosamente');
       }
     } catch (error) {
       console.error('Error exportando estudiantes:', error);
-      alert('Error al exportar la lista de estudiantes. Por favor intenta nuevamente.');
+      mostrarNotificacion('error', 'Error al exportar la lista de estudiantes. Por favor intenta nuevamente.');
     }
   };
 
@@ -973,6 +996,48 @@ Documento generado automáticamente por el Sistema de Bienestar Estudiantil`;
                 </button>
               </div>
             </div>
+          </div>
+        </div>
+      )}
+      
+      {/* Componente de Notificación */}
+      {notificacion && (
+        <div className={`fixed top-4 right-4 z-50 p-4 rounded-xl shadow-lg border max-w-sm transition-all duration-300 ${
+          notificacion.tipo === 'success' 
+            ? 'bg-green-50 border-green-200 text-green-800' 
+            : notificacion.tipo === 'error'
+            ? 'bg-red-50 border-red-200 text-red-800'
+            : 'bg-blue-50 border-blue-200 text-blue-800'
+        }`}>
+          <div className="flex items-center">
+            <div className="flex-shrink-0 mr-3">
+              {notificacion.tipo === 'success' && (
+                <svg className="w-5 h-5 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                </svg>
+              )}
+              {notificacion.tipo === 'error' && (
+                <svg className="w-5 h-5 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              )}
+              {notificacion.tipo === 'info' && (
+                <svg className="w-5 h-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+              )}
+            </div>
+            <div className="flex-1">
+              <p className="text-sm font-medium">{notificacion.mensaje}</p>
+            </div>
+            <button
+              onClick={() => setNotificacion(null)}
+              className="flex-shrink-0 ml-2 text-gray-400 hover:text-gray-600 transition-colors"
+            >
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            </button>
           </div>
         </div>
       )}
