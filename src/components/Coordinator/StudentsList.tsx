@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import { apiService } from '../../services/api';
 import { ROUTES, COLORES_RIESGO } from '../../constants';
@@ -27,28 +27,43 @@ function StudentsList() {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   
-  // Filtros - obtener valores iniciales de URL
+  // Filtros
   const [filtroRiesgo, setFiltroRiesgo] = useState(searchParams.get('riesgo') || '');
   const [filtroCarrera, setFiltroCarrera] = useState(searchParams.get('carrera') || '');
   const [busqueda, setBusqueda] = useState(searchParams.get('busqueda') || '');
   const [paginaActual, setPaginaActual] = useState(parseInt(searchParams.get('pagina') || '1'));
   
-  // Estado para debounce de búsqueda y carrera
-  const [busquedaDebounced, setBusquedaDebounced] = useState(busqueda);
+  // Estados debouncados solo para los campos de texto
   const [filtroCarreraDebounced, setFiltroCarreraDebounced] = useState(filtroCarrera);
+  const [busquedaDebounced, setBusquedaDebounced] = useState(busqueda);
   
   const limite = 20;
 
-  // Función para refrescar manualmente (para el botón de reintentar)
-  const refrescarDatos = async () => {
+  // Debounce para campos de texto
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setFiltroCarreraDebounced(filtroCarrera);
+    }, 500);
+    return () => clearTimeout(timer);
+  }, [filtroCarrera]);
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setBusquedaDebounced(busqueda);
+    }, 500);
+    return () => clearTimeout(timer);
+  }, [busqueda]);
+
+  // Función para hacer fetch
+  const fetchStudents = async () => {
     try {
       setIsLoading(true);
       setError(null);
 
       const response = await apiService.getStudentsList({
         filtroRiesgo: filtroRiesgo || undefined,
-        filtroCarrera: filtroCarrera || undefined,
-        busqueda: busquedaDebounced || undefined,
+        filtroCarrera: filtroCarreraDebounced || undefined, // Usar debounced
+        busqueda: busquedaDebounced || undefined, // Usar debounced
         pagina: paginaActual,
         limite
       });
@@ -56,9 +71,10 @@ function StudentsList() {
       if (response.success) {
         let estudiantes = [...response.data.estudiantes];
         
-        // Aplicar ordenamiento combinado: filtro de riesgo + búsqueda
-        if (filtroRiesgo || (busquedaDebounced && busquedaDebounced.trim())) {
-          const termino = busquedaDebounced ? busquedaDebounced.toLowerCase().trim() : '';
+        // Aplicar ordenamiento inteligente
+        if (filtroRiesgo || filtroCarreraDebounced || busquedaDebounced) { // Usar debounced
+          const terminoBusqueda = busquedaDebounced ? busquedaDebounced.toLowerCase().trim() : '';
+          const terminoCarrera = filtroCarreraDebounced ? filtroCarreraDebounced.toLowerCase().trim() : '';
           
           estudiantes.sort((a, b) => {
             // PRIMERA PRIORIDAD: Filtro de riesgo
@@ -66,35 +82,49 @@ function StudentsList() {
               const aCoincideRiesgo = a.estadoRiesgo === filtroRiesgo;
               const bCoincideRiesgo = b.estadoRiesgo === filtroRiesgo;
               
-              // Si uno coincide con el filtro de riesgo y el otro no, el que coincide va primero
               if (aCoincideRiesgo && !bCoincideRiesgo) return -1;
               if (bCoincideRiesgo && !aCoincideRiesgo) return 1;
             }
             
-            // SEGUNDA PRIORIDAD: Búsqueda por nombre/correo (solo si hay búsqueda activa)
-            if (termino) {
+            // SEGUNDA PRIORIDAD: Filtro de carrera
+            if (terminoCarrera) {
+              const carreraA = (a.carrera || '').toLowerCase();
+              const carreraB = (b.carrera || '').toLowerCase();
+              
+              const aEmpiezaCarrera = carreraA.startsWith(terminoCarrera);
+              const bEmpiezaCarrera = carreraB.startsWith(terminoCarrera);
+              
+              if (aEmpiezaCarrera && !bEmpiezaCarrera) return -1;
+              if (bEmpiezaCarrera && !aEmpiezaCarrera) return 1;
+              
+              const aContieneCarrera = carreraA.includes(terminoCarrera);
+              const bContieneCarrera = carreraB.includes(terminoCarrera);
+              
+              if (aContieneCarrera && !bContieneCarrera) return -1;
+              if (bContieneCarrera && !aContieneCarrera) return 1;
+            }
+            
+            // TERCERA PRIORIDAD: Búsqueda por nombre/correo
+            if (terminoBusqueda) {
               const nombreA = (a.nombreCompleto || '').toLowerCase();
               const nombreB = (b.nombreCompleto || '').toLowerCase();
               const correoA = (a.correo || '').toLowerCase();
               const correoB = (b.correo || '').toLowerCase();
               
-              // Máxima prioridad: nombre empieza con el término
-              const aPrimeraCoincidencia = nombreA.startsWith(termino);
-              const bPrimeraCoincidencia = nombreB.startsWith(termino);
+              const aPrimeraCoincidencia = nombreA.startsWith(terminoBusqueda);
+              const bPrimeraCoincidencia = nombreB.startsWith(terminoBusqueda);
               
               if (aPrimeraCoincidencia && !bPrimeraCoincidencia) return -1;
               if (bPrimeraCoincidencia && !aPrimeraCoincidencia) return 1;
               
-              // Segunda prioridad: nombre contiene el término
-              const aContieneNombre = nombreA.includes(termino);
-              const bContieneNombre = nombreB.includes(termino);
+              const aContieneNombre = nombreA.includes(terminoBusqueda);
+              const bContieneNombre = nombreB.includes(terminoBusqueda);
               
               if (aContieneNombre && !bContieneNombre) return -1;
               if (bContieneNombre && !aContieneNombre) return 1;
               
-              // Tercera prioridad: correo contiene el término
-              const aContieneCorreo = correoA.includes(termino);
-              const bContieneCorreo = correoB.includes(termino);
+              const aContieneCorreo = correoA.includes(terminoBusqueda);
+              const bContieneCorreo = correoB.includes(terminoBusqueda);
               
               if (aContieneCorreo && !bContieneCorreo) return -1;
               if (bContieneCorreo && !aContieneCorreo) return 1;
@@ -121,137 +151,25 @@ function StudentsList() {
     }
   };
 
-  // Debounce para la búsqueda
+  // Effect para hacer fetch cuando cambien los filtros (usando debounced para texto)
   useEffect(() => {
-    const timer = setTimeout(() => {
-      setBusquedaDebounced(busqueda);
-    }, 500);
-    return () => clearTimeout(timer);
-  }, [busqueda]);
+    fetchStudents();
+  }, [filtroRiesgo, filtroCarreraDebounced, busquedaDebounced, paginaActual]);
 
-  // Debounce para el filtro de carrera
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      setFiltroCarreraDebounced(filtroCarrera);
-    }, 300); // Menos delay para carrera
-    return () => clearTimeout(timer);
-  }, [filtroCarrera]);
-
-  // Effect SOLO para fetch cuando terminan los debounces
-  useEffect(() => {
-    const fetchData = async () => {
-      try {
-        setIsLoading(true);
-        setError(null);
-
-        const response = await apiService.getStudentsList({
-          filtroRiesgo: filtroRiesgo || undefined,
-          filtroCarrera: filtroCarreraDebounced || undefined, // Usar versión debounced
-          busqueda: busquedaDebounced || undefined,
-          pagina: paginaActual,
-          limite
-        });
-        
-        if (response.success) {
-          let estudiantes = [...response.data.estudiantes];
-          
-          // Aplicar ordenamiento combinado
-          if (filtroRiesgo || filtroCarreraDebounced || busquedaDebounced) {
-            const terminoBusqueda = busquedaDebounced ? busquedaDebounced.toLowerCase().trim() : '';
-            const terminoCarrera = filtroCarreraDebounced ? filtroCarreraDebounced.toLowerCase().trim() : '';
-            
-            estudiantes.sort((a, b) => {
-              // PRIMERA PRIORIDAD: Filtro de riesgo
-              if (filtroRiesgo) {
-                const aCoincideRiesgo = a.estadoRiesgo === filtroRiesgo;
-                const bCoincideRiesgo = b.estadoRiesgo === filtroRiesgo;
-                
-                if (aCoincideRiesgo && !bCoincideRiesgo) return -1;
-                if (bCoincideRiesgo && !aCoincideRiesgo) return 1;
-              }
-              
-              // SEGUNDA PRIORIDAD: Filtro de carrera
-              if (terminoCarrera) {
-                const carreraA = (a.carrera || '').toLowerCase();
-                const carreraB = (b.carrera || '').toLowerCase();
-                
-                const aEmpiezaCarrera = carreraA.startsWith(terminoCarrera);
-                const bEmpiezaCarrera = carreraB.startsWith(terminoCarrera);
-                
-                if (aEmpiezaCarrera && !bEmpiezaCarrera) return -1;
-                if (bEmpiezaCarrera && !aEmpiezaCarrera) return 1;
-                
-                const aContieneCarrera = carreraA.includes(terminoCarrera);
-                const bContieneCarrera = carreraB.includes(terminoCarrera);
-                
-                if (aContieneCarrera && !bContieneCarrera) return -1;
-                if (bContieneCarrera && !aContieneCarrera) return 1;
-              }
-              
-              // TERCERA PRIORIDAD: Búsqueda por nombre/correo
-              if (terminoBusqueda) {
-                const nombreA = (a.nombreCompleto || '').toLowerCase();
-                const nombreB = (b.nombreCompleto || '').toLowerCase();
-                const correoA = (a.correo || '').toLowerCase();
-                const correoB = (b.correo || '').toLowerCase();
-                
-                const aPrimeraCoincidencia = nombreA.startsWith(terminoBusqueda);
-                const bPrimeraCoincidencia = nombreB.startsWith(terminoBusqueda);
-                
-                if (aPrimeraCoincidencia && !bPrimeraCoincidencia) return -1;
-                if (bPrimeraCoincidencia && !aPrimeraCoincidencia) return 1;
-                
-                const aContieneNombre = nombreA.includes(terminoBusqueda);
-                const bContieneNombre = nombreB.includes(terminoBusqueda);
-                
-                if (aContieneNombre && !bContieneNombre) return -1;
-                if (bContieneNombre && !aContieneNombre) return 1;
-                
-                const aContieneCorreo = correoA.includes(terminoBusqueda);
-                const bContieneCorreo = correoB.includes(terminoBusqueda);
-                
-                if (aContieneCorreo && !bContieneCorreo) return -1;
-                if (bContieneCorreo && !aContieneCorreo) return 1;
-              }
-              
-              // ORDEN FINAL: Alfabético por nombre
-              const nombreA = (a.nombreCompleto || '').toLowerCase();
-              const nombreB = (b.nombreCompleto || '').toLowerCase();
-              return nombreA.localeCompare(nombreB);
-            });
-          }
-          
-          setStudentsData({
-            ...response.data,
-            estudiantes
-          });
-        } else {
-          setError(response.message || 'Error al cargar la lista de estudiantes');
-        }
-      } catch (error: any) {
-        setError(error.message || 'Error de conexión');
-      } finally {
-        setIsLoading(false);
-      }
-    };
-
-    fetchData();
-  }, [filtroRiesgo, filtroCarreraDebounced, busquedaDebounced, paginaActual]); // SOLO versiones debounced
-
-  // Handlers para los filtros
+  // Handlers para los filtros - SIN DEBOUNCE PARA DEBUGGEAR
   const handleFiltroRiesgoChange = (value: string) => {
     setFiltroRiesgo(value);
-    setPaginaActual(1); // Reset página al cambiar filtro
+    setPaginaActual(1);
   };
 
   const handleFiltroCarreraChange = (value: string) => {
     setFiltroCarrera(value);
-    setPaginaActual(1); // Reset página al cambiar filtro
+    setPaginaActual(1);
   };
 
   const handleBusquedaChange = (value: string) => {
     setBusqueda(value);
-    setPaginaActual(1); // Reset página al cambiar búsqueda
+    setPaginaActual(1);
   };
 
   const getRiskColor = (nivel: string) => {
@@ -271,9 +189,9 @@ function StudentsList() {
   const limpiarFiltros = () => {
     setFiltroRiesgo('');
     setFiltroCarrera('');
-    setFiltroCarreraDebounced('');
+    setFiltroCarreraDebounced(''); // Limpiar también el debounced
     setBusqueda('');
-    setBusquedaDebounced('');
+    setBusquedaDebounced(''); // Limpiar también el debounced
     setPaginaActual(1);
   };
 
@@ -281,8 +199,8 @@ function StudentsList() {
     try {
       const response = await apiService.getStudentsList({
         filtroRiesgo: filtroRiesgo || undefined,
-        filtroCarrera: filtroCarreraDebounced || undefined,
-        busqueda: busquedaDebounced || undefined,
+        filtroCarrera: filtroCarreraDebounced || undefined, // Usar debounced
+        busqueda: busquedaDebounced || undefined, // Usar debounced
         formato: 'json'
       });
       
@@ -315,7 +233,6 @@ function StudentsList() {
       <div>
         <Navigation />
         <div className="min-h-screen bg-gradient-to-br from-cyan-200 via-teal-100 to-sky-50 flex items-center justify-center relative overflow-hidden">
-          {/* Elementos decorativos de fondo */}
           <div className="absolute inset-0 overflow-hidden">
             <div className="absolute -top-40 -right-40 w-80 h-80 rounded-full bg-gradient-to-r from-cyan-200 to-blue-200 opacity-20 blur-3xl"></div>
             <div className="absolute -bottom-40 -left-40 w-80 h-80 rounded-full bg-gradient-to-r from-sky-200 to-cyan-200 opacity-20 blur-3xl"></div>
@@ -326,7 +243,7 @@ function StudentsList() {
             <h2 className="text-2xl font-bold bg-gradient-to-r from-gray-800 to-gray-600 bg-clip-text text-transparent mb-2">Error al cargar</h2>
             <p className="text-gray-600 mb-6">{error}</p>
             <button 
-              onClick={refrescarDatos}
+              onClick={fetchStudents}
               className="px-6 py-3 bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-600 hover:to-blue-700 text-white font-semibold rounded-xl shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 transition-all duration-200"
             >
               Reintentar
@@ -344,7 +261,6 @@ function StudentsList() {
       <Navigation />
       
       <div className="min-h-screen bg-gradient-to-br from-cyan-200 via-teal-100 to-sky-50 relative overflow-hidden">
-        {/* Elementos decorativos de fondo */}
         <div className="absolute inset-0 overflow-hidden">
           <div className="absolute -top-40 -right-40 w-80 h-80 rounded-full bg-gradient-to-r from-cyan-200 to-blue-200 opacity-20 blur-3xl"></div>
           <div className="absolute -bottom-40 -left-40 w-80 h-80 rounded-full bg-gradient-to-r from-sky-200 to-cyan-200 opacity-20 blur-3xl"></div>
@@ -352,7 +268,6 @@ function StudentsList() {
         </div>
 
         <div className="max-w-7xl mx-auto py-6 px-4 sm:px-6 lg:px-8 relative z-10">
-          {/* Header */}
           <div className="mb-8 text-center">
             <h1 className="text-4xl font-bold bg-gradient-to-r from-gray-800 to-gray-600 bg-clip-text text-transparent mb-4">
               Gestión de Estudiantes
@@ -362,10 +277,8 @@ function StudentsList() {
             </p>
           </div>
 
-          {/* Filtros y controles - CORREGIDOS */}
           <div className="bg-white/70 backdrop-blur-lg border border-white/20 rounded-2xl shadow-xl p-6 mb-6">
             <div className="grid grid-cols-1 lg:grid-cols-4 gap-4 mb-4">
-              {/* Búsqueda */}
               <div className="lg:col-span-2">
                 <label htmlFor="busqueda" className="block text-sm font-semibold text-gray-700 mb-2">
                   Buscar estudiante
@@ -384,16 +297,9 @@ function StudentsList() {
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
                     </svg>
                   </div>
-                  {/* Indicador de búsqueda activa */}
-                  {busqueda !== busquedaDebounced && (
-                    <div className="absolute inset-y-0 right-0 pr-3 flex items-center">
-                      <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-cyan-500"></div>
-                    </div>
-                  )}
                 </div>
               </div>
 
-              {/* Filtro por riesgo */}
               <div>
                 <label htmlFor="filtroRiesgo" className="block text-sm font-semibold text-gray-700 mb-2">
                   Nivel de riesgo
@@ -411,31 +317,21 @@ function StudentsList() {
                 </select>
               </div>
 
-              {/* Filtro por carrera */}
               <div>
                 <label htmlFor="filtroCarrera" className="block text-sm font-semibold text-gray-700 mb-2">
                   Carrera
                 </label>
-                <div className="relative">
-                  <input
-                    type="text"
-                    id="filtroCarrera"
-                    value={filtroCarrera}
-                    onChange={(e) => handleFiltroCarreraChange(e.target.value)}
-                    className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl bg-white shadow-sm transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-transparent hover:bg-gray-50"
-                    placeholder="Filtrar por carrera..."
-                  />
-                  {/* Indicador de filtrado activo */}
-                  {filtroCarrera !== filtroCarreraDebounced && (
-                    <div className="absolute inset-y-0 right-0 pr-3 flex items-center">
-                      <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-cyan-500"></div>
-                    </div>
-                  )}
-                </div>
+                <input
+                  type="text"
+                  id="filtroCarrera"
+                  value={filtroCarrera}
+                  onChange={(e) => handleFiltroCarreraChange(e.target.value)}
+                  className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl bg-white shadow-sm transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-transparent hover:bg-gray-50"
+                  placeholder="Filtrar por carrera..."
+                />
               </div>
             </div>
 
-            {/* Controles adicionales */}
             <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between space-y-2 sm:space-y-0 pt-4 border-t border-white/30">
               <div className="flex items-center space-x-4">
                 <button
@@ -460,7 +356,6 @@ function StudentsList() {
               </div>
             </div>
 
-            {/* Filtros activos */}
             {(filtroRiesgo || filtroCarreraDebounced || busquedaDebounced) && (
               <div className="mt-4 pt-4 border-t border-white/30">
                 <div className="flex flex-wrap items-center gap-2">
@@ -506,7 +401,6 @@ function StudentsList() {
             )}
           </div>
 
-          {/* Lista de estudiantes */}
           {studentsData.estudiantes.length > 0 ? (
             <div className="bg-white/70 backdrop-blur-lg border border-white/20 rounded-2xl shadow-xl overflow-hidden">
               <div className="overflow-x-auto">
@@ -591,7 +485,6 @@ function StudentsList() {
                 </table>
               </div>
 
-              {/* Paginación */}
               {studentsData.paginacion.totalPaginas > 1 && (
                 <div className="bg-white/50 px-6 py-3 border-t border-white/30">
                   <div className="flex items-center justify-between">

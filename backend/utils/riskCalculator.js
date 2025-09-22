@@ -13,11 +13,11 @@ class RiskCalculator {
         BURNOUT: 1.3
       },
       
-      // Umbrales para clasificación de riesgo (sobre 10)
+      // Umbrales para clasificación de riesgo (sobre 10) - CORREGIDOS
       riskThresholds: {
-        BAJO: { min: 0, max: 3.9 },
-        MEDIO: { min: 4, max: 6.9 },
-        ALTO: { min: 7, max: 10 }
+        BAJO: { min: 0, max: 3.5 },
+        MEDIO: { min: 3.6, max: 6.5 },
+        ALTO: { min: 6.6, max: 10 }
       },
       
       // Pesos específicos por pregunta (se pueden personalizar)
@@ -95,18 +95,25 @@ class RiskCalculator {
   }
 
   /**
-   * Determina el nivel de riesgo basado en puntaje
+   * Determina el nivel de riesgo basado en puntaje - CORREGIDO
    */
   determineRiskLevel(score) {
     const thresholds = this.config.riskThresholds;
     
-    if (score <= thresholds.BAJO.max) {
-      return 'BAJO';
-    } else if (score <= thresholds.MEDIO.max) {
-      return 'MEDIO';
+    console.log(`🔍 Determinando riesgo para puntaje: ${score}`);
+    console.log(`📊 Umbrales: BAJO(0-${thresholds.BAJO.max}), MEDIO(${thresholds.MEDIO.min}-${thresholds.MEDIO.max}), ALTO(${thresholds.ALTO.min}-10)`);
+    
+    let level;
+    if (score >= thresholds.ALTO.min) {
+      level = 'ALTO';
+    } else if (score >= thresholds.MEDIO.min) {
+      level = 'MEDIO';
     } else {
-      return 'ALTO';
+      level = 'BAJO';
     }
+    
+    console.log(`✅ Resultado: ${score} → ${level}`);
+    return level;
   }
 
   /**
@@ -139,13 +146,25 @@ class RiskCalculator {
       studentProfile 
     } = evaluationData;
 
+    console.log('🎯 Procesando evaluación:');
+    console.log('  Respuestas estrés:', stressAnswers);
+    console.log('  Respuestas burnout:', burnoutAnswers);
+
     // Calcular puntajes por categoría
     const stressResult = this.calculateCategoryScore(stressAnswers, stressWeights, 'ESTRES');
     const burnoutResult = this.calculateCategoryScore(burnoutAnswers, burnoutWeights, 'BURNOUT');
 
+    console.log('📊 Puntajes calculados:');
+    console.log('  Estrés raw:', stressResult.score);
+    console.log('  Burnout raw:', burnoutResult.score);
+
     // Aplicar factores de ajuste
     const adjustedStressScore = this.applyAdjustmentFactors(stressResult.score, studentProfile);
     const adjustedBurnoutScore = this.applyAdjustmentFactors(burnoutResult.score, studentProfile);
+
+    console.log('📊 Puntajes ajustados:');
+    console.log('  Estrés ajustado:', adjustedStressScore);
+    console.log('  Burnout ajustado:', adjustedBurnoutScore);
 
     // Calcular puntaje total ponderado
     const weightedTotal = (
@@ -159,6 +178,11 @@ class RiskCalculator {
     const overallRiskLevel = this.determineRiskLevel(finalTotalScore);
     const stressRiskLevel = this.determineRiskLevel(adjustedStressScore);
     const burnoutRiskLevel = this.determineRiskLevel(adjustedBurnoutScore);
+
+    console.log('🎯 Niveles de riesgo:');
+    console.log('  Estrés:', stressRiskLevel);
+    console.log('  Burnout:', burnoutRiskLevel);
+    console.log('  General:', overallRiskLevel);
 
     // Generar análisis detallado
     const analysis = this.generateDetailedAnalysis({
@@ -398,38 +422,124 @@ class RiskCalculator {
   }
 
   /**
-   * Determina si se necesita generar una alerta
+   * Determina si se necesita generar una alerta - CORREGIDO COMPLETAMENTE
    */
   shouldGenerateAlert(riskLevel, stressScore, burnoutScore) {
-    const alertInfo = {
-      needed: false,
-      type: null,
-      severity: null,
-      message: null,
-      requiresIntervention: false
-    };
-
-    if (riskLevel === 'ALTO') {
-      alertInfo.needed = true;
-      alertInfo.severity = 'ALTO';
-      alertInfo.requiresIntervention = true;
-
-      if (stressScore >= burnoutScore) {
-        alertInfo.type = 'Estrés Alto';
-        alertInfo.message = `Niveles críticos de estrés detectados (${Math.round(stressScore)}/10)`;
-      } else {
-        alertInfo.type = 'Burnout Alto';
-        alertInfo.message = `Niveles críticos de burnout detectados (${Math.round(burnoutScore)}/10)`;
-      }
-    } else if (riskLevel === 'MEDIO' && (stressScore >= 6 || burnoutScore >= 6)) {
-      alertInfo.needed = true;
-      alertInfo.type = 'Riesgo Moderado';
-      alertInfo.severity = 'MEDIO';
-      alertInfo.message = `Signos de estrés moderado detectados - seguimiento recomendado`;
-      alertInfo.requiresIntervention = false;
+    console.log('🚨 EVALUANDO ALERTAS:');
+    console.log(`  Riesgo general: ${riskLevel}`);
+    console.log(`  Puntaje estrés: ${stressScore}`);
+    console.log(`  Puntaje burnout: ${burnoutScore}`);
+    
+    const alerts = [];
+    
+    // Determinar niveles de riesgo individuales
+    const stressRiskLevel = this.determineRiskLevel(stressScore);
+    const burnoutRiskLevel = this.determineRiskLevel(burnoutScore);
+    
+    console.log(`  Nivel estrés individual: ${stressRiskLevel}`);
+    console.log(`  Nivel burnout individual: ${burnoutRiskLevel}`);
+    
+    // ALERTA POR ESTRÉS ALTO (independiente)
+    if (stressRiskLevel === 'ALTO') {
+      console.log('  ✅ Generando alerta ESTRÉS ALTO');
+      alerts.push({
+        needed: true,
+        type: 'Estrés Alto',
+        severity: 'ALTO',
+        message: `Niveles críticos de estrés detectados (${Math.round(stressScore)}/10)`,
+        requiresIntervention: true,
+        category: 'ESTRES'
+      });
     }
-
-    return alertInfo;
+    
+    // ALERTA POR BURNOUT ALTO (independiente)
+    if (burnoutRiskLevel === 'ALTO') {
+      console.log('  ✅ Generando alerta BURNOUT ALTO');
+      alerts.push({
+        needed: true,
+        type: 'Burnout Alto', 
+        severity: 'ALTO',
+        message: `Niveles críticos de burnout detectados (${Math.round(burnoutScore)}/10)`,
+        requiresIntervention: true,
+        category: 'BURNOUT'
+      });
+    }
+    
+    // ALERTAS POR RIESGO MEDIO (solo si no hay alertas altas)
+    if (alerts.length === 0) {
+      console.log('  🟡 No hay alertas ALTO, evaluando MEDIO...');
+      
+      if (stressRiskLevel === 'MEDIO') {
+        console.log('  ⚠️ Generando alerta ESTRÉS MEDIO');
+        alerts.push({
+          needed: true,
+          type: 'Estrés Moderado',
+          severity: 'MEDIO', 
+          message: `Niveles moderados de estrés detectados (${Math.round(stressScore)}/10) - seguimiento recomendado`,
+          requiresIntervention: false,
+          category: 'ESTRES'
+        });
+      }
+      
+      if (burnoutRiskLevel === 'MEDIO') {
+        console.log('  ⚠️ Generando alerta BURNOUT MEDIO');
+        alerts.push({
+          needed: true,
+          type: 'Burnout Moderado',
+          severity: 'MEDIO',
+          message: `Síntomas moderados de burnout detectados (${Math.round(burnoutScore)}/10) - seguimiento recomendado`, 
+          requiresIntervention: false,
+          category: 'BURNOUT'
+        });
+      }
+    }
+    
+    // Si no hay alertas individuales, evaluar riesgo general
+    if (alerts.length === 0 && riskLevel === 'ALTO') {
+      console.log('  🔶 Generando alerta RIESGO GENERAL ALTO');
+      alerts.push({
+        needed: true,
+        type: 'Riesgo Psicosocial Alto',
+        severity: 'ALTO',
+        message: `Combinación de factores de riesgo detectada - evaluación integral recomendada`,
+        requiresIntervention: true,
+        category: 'GENERAL'
+      });
+    }
+    
+    console.log(`  📊 TOTAL ALERTAS: ${alerts.length}`);
+    if (alerts.length > 0) {
+      alerts.forEach(alert => {
+        console.log(`    - ${alert.type} (${alert.severity})`);
+      });
+    }
+    
+    // Retornar todas las alertas o una estructura vacía si no hay ninguna
+    if (alerts.length === 0) {
+      console.log('  ❌ NO se generaron alertas');
+      return {
+        needed: false,
+        type: null,
+        severity: null,
+        message: null,
+        requiresIntervention: false,
+        alerts: []
+      };
+    }
+    
+    // Si hay múltiples alertas, retornar la más severa como principal
+    const mainAlert = alerts.find(alert => alert.severity === 'ALTO') || alerts[0];
+    
+    console.log(`  ✅ ALERTA PRINCIPAL: ${mainAlert.type} (${mainAlert.severity})`);
+    
+    return {
+      needed: true,
+      type: mainAlert.type,
+      severity: mainAlert.severity,
+      message: mainAlert.message,
+      requiresIntervention: mainAlert.requiresIntervention,
+      alerts: alerts // Array con todas las alertas detectadas
+    };
   }
 
   /**

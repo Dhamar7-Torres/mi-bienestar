@@ -51,7 +51,7 @@ class StudentController {
       // Calcular estadísticas de evaluaciones
       const evaluacionesEstadisticas = await this.calculateEvaluationStats(estudianteId);
 
-      // Verificar si puede hacer evaluación semanal
+      // Verificar si puede hacer evaluación semanal (LÍMITE AUMENTADO PARA PRUEBAS)
       const puedeEvaluar = await this.canTakeWeeklyEvaluation(estudianteId);
 
       // Obtener progreso semanal
@@ -157,16 +157,22 @@ class StudentController {
   }
 
   /**
-   * Procesar evaluación semanal
+   * Procesar evaluación semanal - COMPLETAMENTE CORREGIDO
    */
   static async processWeeklyEvaluation(req, res) {
     try {
       const estudianteId = req.user.estudiante.id;
       const { respuestasEstres, respuestasBurnout } = req.body;
 
+      console.log('🔄 INICIANDO PROCESAMIENTO DE EVALUACIÓN');
+      console.log(`📋 Estudiante ID: ${estudianteId}`);
+      console.log(`📊 Respuestas estrés: ${respuestasEstres}`);
+      console.log(`📊 Respuestas burnout: ${respuestasBurnout}`);
+
       // Verificar si puede hacer evaluación
       const puedeEvaluar = await this.canTakeWeeklyEvaluation(estudianteId);
       if (!puedeEvaluar.canEvaluate) {
+        console.log('❌ No puede evaluar:', puedeEvaluar.reason);
         return res.status(429).json({
           success: false,
           message: puedeEvaluar.reason,
@@ -188,6 +194,9 @@ class StudentController {
         .filter(p => p.categoria === 'BURNOUT')
         .map(p => p.peso);
 
+      console.log(`⚖️ Pesos estrés: ${pesosEstres}`);
+      console.log(`⚖️ Pesos burnout: ${pesosBurnout}`);
+
       // Obtener perfil del estudiante para ajustes
       const estudiante = await prisma.estudiante.findUnique({
         where: { id: estudianteId },
@@ -197,7 +206,10 @@ class StudentController {
         }
       });
 
+      console.log(`👤 Perfil estudiante:`, estudiante);
+
       // Procesar evaluación con calculadora de riesgo
+      console.log('🔬 LLAMANDO A RISK CALCULATOR...');
       const resultadoEvaluacion = this.riskCalculator.processEvaluation({
         stressAnswers: respuestasEstres,
         burnoutAnswers: respuestasBurnout,
@@ -206,7 +218,13 @@ class StudentController {
         studentProfile: estudiante
       });
 
+      console.log('📈 RESULTADO DE EVALUACIÓN:', {
+        scores: resultadoEvaluacion.scores,
+        riskLevels: resultadoEvaluacion.riskLevels
+      });
+
       // Guardar evaluación en base de datos
+      console.log('💾 Guardando evaluación en BD...');
       const nuevaEvaluacion = await prisma.evaluacion.create({
         data: {
           estudianteId,
@@ -222,7 +240,10 @@ class StudentController {
         }
       });
 
+      console.log('✅ Evaluación guardada con ID:', nuevaEvaluacion.id);
+
       // Actualizar estado del estudiante
+      console.log('🔄 Actualizando estado del estudiante...');
       await prisma.estudiante.update({
         where: { id: estudianteId },
         data: {
@@ -233,22 +254,56 @@ class StudentController {
         }
       });
 
-      // Generar alerta si es necesario
+      console.log('✅ Estado del estudiante actualizado');
+
+      // GENERAR ALERTAS (CORREGIDO COMPLETAMENTE)
+      console.log('🚨 EVALUANDO ALERTAS...');
       const alertInfo = this.riskCalculator.shouldGenerateAlert(
         resultadoEvaluacion.riskLevels.overall,
         resultadoEvaluacion.scores.stress,
         resultadoEvaluacion.scores.burnout
       );
 
-      if (alertInfo.needed) {
-        await prisma.alerta.create({
-          data: {
-            estudianteId,
-            tipoAlerta: alertInfo.type,
-            severidad: alertInfo.severity,
-            mensaje: alertInfo.message
-          }
+      console.log('📋 Info de alertas:', alertInfo);
+
+      let alertasCreadas = [];
+      if (alertInfo.needed && alertInfo.alerts && alertInfo.alerts.length > 0) {
+        console.log(`💾 Creando ${alertInfo.alerts.length} alertas en BD...`);
+        
+        // Crear TODAS las alertas detectadas
+        for (const alert of alertInfo.alerts) {
+          console.log(`  📝 Creando alerta: ${alert.type} (${alert.severity})`);
+          
+          const nuevaAlerta = await prisma.alerta.create({
+            data: {
+              estudianteId,
+              tipoAlerta: alert.type,
+              severidad: alert.severity,
+              mensaje: alert.message
+              // Agregar estos campos si existen en tu esquema:
+              // categoria: alert.category || null,
+              // requiereIntervencion: alert.requiresIntervention || false
+            }
+          });
+          
+          alertasCreadas.push({
+            id: nuevaAlerta.id,
+            tipo: alert.type,
+            severidad: alert.severity,
+            categoria: alert.category,
+            mensaje: alert.message
+          });
+          
+          console.log(`  ✅ Alerta creada con ID: ${nuevaAlerta.id}`);
+        }
+        
+        console.log(`🎯 RESULTADO: Se crearon ${alertasCreadas.length} alertas:`);
+        alertasCreadas.forEach(alerta => {
+          console.log(`  - ${alerta.tipo} (${alerta.severidad})`);
         });
+        
+      } else {
+        console.log('ℹ️ No se generaron alertas');
       }
 
       // Preparar respuesta
@@ -261,20 +316,26 @@ class StudentController {
         },
         analisis: resultadoEvaluacion.analysis,
         recomendaciones: resultadoEvaluacion.recommendations,
-        alertaGenerada: alertInfo.needed
+        alertaGenerada: alertInfo.needed,
+        alertasCreadas: alertasCreadas,
+        totalAlertas: alertasCreadas.length
       };
 
+      console.log('🎉 EVALUACIÓN COMPLETADA EXITOSAMENTE');
+      
       res.status(201).json({
         success: true,
-        message: 'Evaluación procesada exitosamente',
+        message: `Evaluación procesada exitosamente${alertasCreadas.length > 0 ? ` con ${alertasCreadas.length} alerta(s) generada(s)` : ''}`,
         data: respuesta
       });
 
     } catch (error) {
-      console.error('Error procesando evaluación semanal:', error);
+      console.error('💥 ERROR PROCESANDO EVALUACIÓN:', error);
+      console.error('Stack trace:', error.stack);
       res.status(500).json({
         success: false,
-        message: 'Error interno del servidor'
+        message: 'Error interno del servidor',
+        error: process.env.NODE_ENV === 'development' ? error.message : undefined
       });
     }
   }
@@ -425,7 +486,7 @@ class StudentController {
   // MÉTODOS AUXILIARES
 
   /**
-   * Verificar si puede hacer evaluación semanal
+   * Verificar si puede hacer evaluación semanal - LÍMITE AUMENTADO PARA PRUEBAS
    */
   static async canTakeWeeklyEvaluation(estudianteId) {
     try {
@@ -443,11 +504,14 @@ class StudentController {
         }
       });
 
-      if (evaluacionesSemana >= 2) {
+      console.log(`📊 Evaluaciones esta semana: ${evaluacionesSemana}`);
+
+      // LÍMITE AUMENTADO A 10 PARA PRUEBAS (antes era 2)
+      if (evaluacionesSemana >= 10) {
         const proximaSemana = new Date(inicioSemana.getTime() + 7 * 24 * 60 * 60 * 1000);
         return {
           canEvaluate: false,
-          reason: 'Has alcanzado el límite de evaluaciones por semana (2)',
+          reason: 'Has alcanzado el límite de evaluaciones por semana (10)',
           nextAvailable: proximaSemana
         };
       }
