@@ -13,6 +13,9 @@ const router = express.Router();
 router.use(authenticateToken);
 router.use(requireCoordinator);
 
+// Usar las rutas de coordinadores
+app.use('/api/coordinators', coordinatorRoutes);
+
 // GET /api/coordinators/dashboard - Dashboard del coordinador
 router.get('/dashboard',
   logActivity('ver_dashboard_coordinador'),

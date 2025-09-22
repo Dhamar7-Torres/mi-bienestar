@@ -21,9 +21,13 @@ function Alerts() {
   const [error, setError] = useState<string | null>(null);
   const [selectedAlerts, setSelectedAlerts] = useState<number[]>([]);
   
+  // Estados adicionales para el botón "marcar como leídas"
+  const [isMarkingAsRead, setIsMarkingAsRead] = useState(false);
+  const [successMessage, setSuccessMessage] = useState<string | null>(null);
+  
   // Filtros
   const [filtroSeveridad, setFiltroSeveridad] = useState('');
-  const [filtroLeidas, setFiltroLeidas] = useState('false');
+  const [filtroLeidas, setFiltroLeidas] = useState(''); // Cambiado para mostrar todas por defecto
   const [fechaDesde, setFechaDesde] = useState('');
   const [fechaHasta, setFechaHasta] = useState('');
   const [paginaActual, setPaginaActual] = useState(1);
@@ -34,9 +38,48 @@ function Alerts() {
     fetchAlerts();
   }, [filtroSeveridad, filtroLeidas, fechaDesde, fechaHasta, paginaActual]);
 
+  // Limpiar mensajes después de un tiempo
+  useEffect(() => {
+    if (successMessage) {
+      const timer = setTimeout(() => {
+        setSuccessMessage(null);
+      }, 4000);
+      return () => clearTimeout(timer);
+    }
+  }, [successMessage]);
+
+  useEffect(() => {
+    if (error) {
+      const timer = setTimeout(() => {
+        setError(null);
+      }, 6000);
+      return () => clearTimeout(timer);
+    }
+  }, [error]);
+
+  // Limpiar mensajes después de un tiempo
+  useEffect(() => {
+    if (successMessage) {
+      const timer = setTimeout(() => {
+        setSuccessMessage(null);
+      }, 3000);
+      return () => clearTimeout(timer);
+    }
+  }, [successMessage]);
+
+  useEffect(() => {
+    if (error) {
+      const timer = setTimeout(() => {
+        setError(null);
+      }, 5000);
+      return () => clearTimeout(timer);
+    }
+  }, [error]);
+
   const fetchAlerts = async () => {
     try {
       setIsLoading(true);
+      setError(null); // Limpiar errores previos
       const response = await apiService.getAlerts({
         severidad: filtroSeveridad || undefined,
         leidas: filtroLeidas === 'true',
@@ -52,6 +95,7 @@ function Alerts() {
         setError(response.message || 'Error al cargar las alertas');
       }
     } catch (error: any) {
+      console.error('Error fetching alerts:', error);
       setError(error.message || 'Error de conexión');
     } finally {
       setIsLoading(false);
@@ -75,16 +119,34 @@ function Alerts() {
   };
 
   const markAlertsAsRead = async () => {
-    if (selectedAlerts.length === 0) return;
+    if (selectedAlerts.length === 0) {
+      setError('No hay alertas seleccionadas');
+      return;
+    }
     
     try {
+      setIsMarkingAsRead(true);
+      setError(null);
+      setSuccessMessage(null);
+      
+      console.log('Marcando alertas como leídas:', selectedAlerts); // Debug log
+      
       const response = await apiService.markAlertsAsRead(selectedAlerts);
+      
+      console.log('Respuesta del API:', response); // Debug log
+      
       if (response.success) {
+        setSuccessMessage(`${selectedAlerts.length} alerta${selectedAlerts.length > 1 ? 's' : ''} marcada${selectedAlerts.length > 1 ? 's' : ''} como leída${selectedAlerts.length > 1 ? 's' : ''}`);
         setSelectedAlerts([]);
-        fetchAlerts(); // Recargar alertas
+        await fetchAlerts(); // Recargar alertas
+      } else {
+        setError(response.message || 'Error al marcar las alertas como leídas');
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error marcando alertas como leídas:', error);
+      setError(error.message || 'Error al procesar la solicitud');
+    } finally {
+      setIsMarkingAsRead(false);
     }
   };
 
@@ -118,6 +180,7 @@ function Alerts() {
     setFechaDesde('');
     setFechaHasta('');
     setPaginaActual(1);
+    setSelectedAlerts([]);
   };
 
   if (isLoading) {
@@ -129,7 +192,7 @@ function Alerts() {
     );
   }
 
-  if (error) {
+  if (error && !alertsData) {
     return (
       <div>
         <Navigation />
@@ -181,6 +244,100 @@ function Alerts() {
             </p>
           </div>
 
+          {/* Mensajes de estado */}
+          {error && (
+            <div className="mb-6 bg-red-50 border-l-4 border-red-400 text-red-700 p-4 rounded-xl shadow-md">
+              <div className="flex items-center">
+                <div className="flex-shrink-0">
+                  <span className="text-red-500 text-xl">❌</span>
+                </div>
+                <div className="ml-3">
+                  <p className="text-sm font-medium">{error}</p>
+                </div>
+                <div className="ml-auto pl-3">
+                  <button
+                    onClick={() => setError(null)}
+                    className="inline-flex bg-red-50 rounded-md p-1.5 text-red-500 hover:bg-red-100 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-red-50 focus:ring-red-500 transition-colors duration-200"
+                  >
+                    <span className="sr-only">Cerrar</span>
+                    ✕
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {successMessage && (
+            <div className="mb-6 bg-green-50 border-l-4 border-green-400 text-green-700 p-4 rounded-xl shadow-md">
+              <div className="flex items-center">
+                <div className="flex-shrink-0">
+                  <span className="text-green-500 text-xl">✅</span>
+                </div>
+                <div className="ml-3">
+                  <p className="text-sm font-medium">{successMessage}</p>
+                </div>
+                <div className="ml-auto pl-3">
+                  <button
+                    onClick={() => setSuccessMessage(null)}
+                    className="inline-flex bg-green-50 rounded-md p-1.5 text-green-500 hover:bg-green-100 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-green-50 focus:ring-green-500 transition-colors duration-200"
+                  >
+                    <span className="sr-only">Cerrar</span>
+                    ✕
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Mensajes de estado */}
+          {error && (
+            <div className="mb-6 bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded-xl shadow-md">
+              <div className="flex">
+                <div className="flex-shrink-0">
+                  <span className="text-red-500">❌</span>
+                </div>
+                <div className="ml-3">
+                  <p className="text-sm font-medium">{error}</p>
+                </div>
+                <div className="ml-auto pl-3">
+                  <div className="-mx-1.5 -my-1.5">
+                    <button
+                      onClick={() => setError(null)}
+                      className="inline-flex bg-red-100 rounded-md p-1.5 text-red-500 hover:bg-red-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-red-100 focus:ring-red-500"
+                    >
+                      <span className="sr-only">Cerrar</span>
+                      ×
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {successMessage && (
+            <div className="mb-6 bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded-xl shadow-md">
+              <div className="flex">
+                <div className="flex-shrink-0">
+                  <span className="text-green-500">✅</span>
+                </div>
+                <div className="ml-3">
+                  <p className="text-sm font-medium">{successMessage}</p>
+                </div>
+                <div className="ml-auto pl-3">
+                  <div className="-mx-1.5 -my-1.5">
+                    <button
+                      onClick={() => setSuccessMessage(null)}
+                      className="inline-flex bg-green-100 rounded-md p-1.5 text-green-500 hover:bg-green-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-green-100 focus:ring-green-500"
+                    >
+                      <span className="sr-only">Cerrar</span>
+                      ×
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+
           {/* Filtros */}
           <div className="bg-white/70 backdrop-blur-lg border border-white/20 rounded-2xl shadow-xl p-6 mb-6">
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4 mb-4">
@@ -211,6 +368,7 @@ function Alerts() {
                   onChange={(e) => setFiltroLeidas(e.target.value)}
                   className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl bg-white/50 backdrop-blur-sm shadow-sm transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-transparent hover:bg-white/70"
                 >
+                  <option value="">Todas las alertas</option>
                   <option value="false">Sin leer</option>
                   <option value="true">Leídas</option>
                 </select>
@@ -270,15 +428,45 @@ function Alerts() {
                 {selectedAlerts.length > 0 && (
                   <button
                     onClick={markAlertsAsRead}
-                    className="px-4 py-2 bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-600 hover:to-blue-700 text-white font-semibold rounded-lg shadow-md hover:shadow-lg transform hover:-translate-y-0.5 transition-all duration-200 text-sm"
+                    disabled={isMarkingAsRead}
+                    className={`px-4 py-2 font-semibold rounded-lg shadow-md transform transition-all duration-200 text-sm ${
+                      isMarkingAsRead
+                        ? 'bg-gray-400 text-gray-200 cursor-not-allowed'
+                        : 'bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-600 hover:to-blue-700 text-white hover:shadow-lg hover:-translate-y-0.5'
+                    }`}
                   >
-                    Marcar como leídas ({selectedAlerts.length})
+                    {isMarkingAsRead ? (
+                      <span className="flex items-center">
+                        <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                          <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                          <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                        </svg>
+                        Marcando...
+                      </span>
+                    ) : (
+                      `Marcar como leídas (${selectedAlerts.length})`
+                    )}
                   </button>
                 )}
               </div>
 
-              <div className="text-sm font-medium text-gray-600">
-                {alertsData.paginacion.total} alerta{alertsData.paginacion.total !== 1 ? 's' : ''}
+              <div className="text-sm font-medium text-gray-600 flex items-center space-x-4">
+                <span>
+                  {alertsData.paginacion.total} alerta{alertsData.paginacion.total !== 1 ? 's' : ''} total{alertsData.paginacion.total !== 1 ? 'es' : ''}
+                </span>
+                {alertsData.alertas.length > 0 && (
+                  <>
+                    <span className="text-gray-400">•</span>
+                    <span className="flex items-center space-x-1">
+                      <span className="w-2 h-2 bg-blue-500 rounded-full"></span>
+                      <span>{alertsData.alertas.filter(a => !a.estaLeida).length} sin leer</span>
+                    </span>
+                    <span className="flex items-center space-x-1">
+                      <span className="w-2 h-2 bg-gray-400 rounded-full"></span>
+                      <span>{alertsData.alertas.filter(a => a.estaLeida).length} leídas</span>
+                    </span>
+                  </>
+                )}
               </div>
             </div>
           </div>
@@ -304,7 +492,10 @@ function Alerts() {
                         <input
                           type="checkbox"
                           checked={isSelected}
-                          onChange={() => handleSelectAlert(alerta.id)}
+                          onChange={(e) => {
+                            e.stopPropagation();
+                            handleSelectAlert(alerta.id);
+                          }}
                           className="w-4 h-4 text-cyan-600 rounded border-gray-300 focus:ring-cyan-500"
                         />
                       </div>
@@ -410,9 +601,11 @@ function Alerts() {
                   No hay alertas
                 </h3>
                 <p className="text-gray-600 font-medium">
-                  {filtroLeidas === 'false' ? 
-                    'No hay alertas sin leer en este momento' :
-                    'No se encontraron alertas con los filtros aplicados'
+                  {filtroLeidas === '' ? 
+                    'No se encontraron alertas con los filtros aplicados' :
+                    filtroLeidas === 'false' ? 
+                      'No hay alertas sin leer en este momento' :
+                      'No hay alertas leídas en este momento'
                   }
                 </p>
               </div>

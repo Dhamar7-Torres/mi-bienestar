@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import { apiService } from '../../services/api';
 import { ROUTES, COLORES_RIESGO } from '../../constants';
@@ -27,46 +27,89 @@ function StudentsList() {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   
-  // Filtros
+  // Filtros - obtener valores iniciales de URL
   const [filtroRiesgo, setFiltroRiesgo] = useState(searchParams.get('riesgo') || '');
   const [filtroCarrera, setFiltroCarrera] = useState(searchParams.get('carrera') || '');
   const [busqueda, setBusqueda] = useState(searchParams.get('busqueda') || '');
-  const [ordenarPor, setOrdenarPor] = useState(searchParams.get('ordenarPor') || 'nombreCompleto');
-  const [orden, setOrden] = useState(searchParams.get('orden') || 'asc');
   const [paginaActual, setPaginaActual] = useState(parseInt(searchParams.get('pagina') || '1'));
+  
+  // Estado para debounce de búsqueda
+  const [busquedaDebounced, setBusquedaDebounced] = useState(busqueda);
   
   const limite = 20;
 
-  useEffect(() => {
-    fetchStudents();
-  }, [filtroRiesgo, filtroCarrera, busqueda, ordenarPor, orden, paginaActual]);
-
-  const fetchStudents = async () => {
+  // Función para refrescar manualmente (para el botón de reintentar)
+  const refrescarDatos = async () => {
     try {
       setIsLoading(true);
-      
-      // Actualizar URL con los filtros actuales
-      const params = new URLSearchParams();
-      if (filtroRiesgo) params.set('riesgo', filtroRiesgo);
-      if (filtroCarrera) params.set('carrera', filtroCarrera);
-      if (busqueda) params.set('busqueda', busqueda);
-      if (ordenarPor) params.set('ordenarPor', ordenarPor);
-      if (orden) params.set('orden', orden);
-      if (paginaActual > 1) params.set('pagina', paginaActual.toString());
-      setSearchParams(params);
+      setError(null);
 
       const response = await apiService.getStudentsList({
         filtroRiesgo: filtroRiesgo || undefined,
         filtroCarrera: filtroCarrera || undefined,
-        busqueda: busqueda || undefined,
-        ordenarPor,
-        orden,
+        busqueda: busquedaDebounced || undefined,
         pagina: paginaActual,
         limite
       });
       
       if (response.success) {
-        setStudentsData(response.data);
+        let estudiantes = [...response.data.estudiantes];
+        
+        // Aplicar ordenamiento combinado: filtro de riesgo + búsqueda
+        if (filtroRiesgo || (busquedaDebounced && busquedaDebounced.trim())) {
+          const termino = busquedaDebounced ? busquedaDebounced.toLowerCase().trim() : '';
+          
+          estudiantes.sort((a, b) => {
+            // PRIMERA PRIORIDAD: Filtro de riesgo
+            if (filtroRiesgo) {
+              const aCoincideRiesgo = a.estadoRiesgo === filtroRiesgo;
+              const bCoincideRiesgo = b.estadoRiesgo === filtroRiesgo;
+              
+              // Si uno coincide con el filtro de riesgo y el otro no, el que coincide va primero
+              if (aCoincideRiesgo && !bCoincideRiesgo) return -1;
+              if (bCoincideRiesgo && !aCoincideRiesgo) return 1;
+            }
+            
+            // SEGUNDA PRIORIDAD: Búsqueda por nombre/correo (solo si hay búsqueda activa)
+            if (termino) {
+              const nombreA = (a.nombreCompleto || '').toLowerCase();
+              const nombreB = (b.nombreCompleto || '').toLowerCase();
+              const correoA = (a.correo || '').toLowerCase();
+              const correoB = (b.correo || '').toLowerCase();
+              
+              // Máxima prioridad: nombre empieza con el término
+              const aPrimeraCoincidencia = nombreA.startsWith(termino);
+              const bPrimeraCoincidencia = nombreB.startsWith(termino);
+              
+              if (aPrimeraCoincidencia && !bPrimeraCoincidencia) return -1;
+              if (bPrimeraCoincidencia && !aPrimeraCoincidencia) return 1;
+              
+              // Segunda prioridad: nombre contiene el término
+              const aContieneNombre = nombreA.includes(termino);
+              const bContieneNombre = nombreB.includes(termino);
+              
+              if (aContieneNombre && !bContieneNombre) return -1;
+              if (bContieneNombre && !aContieneNombre) return 1;
+              
+              // Tercera prioridad: correo contiene el término
+              const aContieneCorreo = correoA.includes(termino);
+              const bContieneCorreo = correoB.includes(termino);
+              
+              if (aContieneCorreo && !bContieneCorreo) return -1;
+              if (bContieneCorreo && !aContieneCorreo) return 1;
+            }
+            
+            // ORDEN FINAL: Alfabético por nombre
+            const nombreA = (a.nombreCompleto || '').toLowerCase();
+            const nombreB = (b.nombreCompleto || '').toLowerCase();
+            return nombreA.localeCompare(nombreB);
+          });
+        }
+        
+        setStudentsData({
+          ...response.data,
+          estudiantes
+        });
       } else {
         setError(response.message || 'Error al cargar la lista de estudiantes');
       }
@@ -77,16 +120,124 @@ function StudentsList() {
     }
   };
 
-  const handleFiltroChange = (nuevosFiltros: Partial<typeof filtros>) => {
-    if (nuevosFiltros.filtroRiesgo !== undefined) setFiltroRiesgo(nuevosFiltros.filtroRiesgo);
-    if (nuevosFiltros.filtroCarrera !== undefined) setFiltroCarrera(nuevosFiltros.filtroCarrera);
-    if (nuevosFiltros.busqueda !== undefined) setBusqueda(nuevosFiltros.busqueda);
-    if (nuevosFiltros.ordenarPor !== undefined) setOrdenarPor(nuevosFiltros.ordenarPor);
-    if (nuevosFiltros.orden !== undefined) setOrden(nuevosFiltros.orden);
-    setPaginaActual(1); // Reset página al cambiar filtros
+  // Debounce para la búsqueda
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setBusquedaDebounced(busqueda);
+    }, 500);
+    return () => clearTimeout(timer);
+  }, [busqueda]);
+
+  // Un solo useEffect para manejar TODOS los cambios
+  useEffect(() => {
+    const fetchAndUpdate = async () => {
+      try {
+        setIsLoading(true);
+        setError(null);
+
+        // Actualizar URL
+        const params = new URLSearchParams();
+        if (filtroRiesgo) params.set('riesgo', filtroRiesgo);
+        if (filtroCarrera) params.set('carrera', filtroCarrera);
+        if (busquedaDebounced) params.set('busqueda', busquedaDebounced);
+        if (paginaActual > 1) params.set('pagina', paginaActual.toString());
+        setSearchParams(params, { replace: true });
+
+        // Hacer fetch
+        const response = await apiService.getStudentsList({
+          filtroRiesgo: filtroRiesgo || undefined,
+          filtroCarrera: filtroCarrera || undefined,
+          busqueda: busquedaDebounced || undefined,
+          pagina: paginaActual,
+          limite
+        });
+        
+        if (response.success) {
+          let estudiantes = [...response.data.estudiantes];
+          
+          // Aplicar ordenamiento combinado: filtro de riesgo + búsqueda
+          if (filtroRiesgo || (busquedaDebounced && busquedaDebounced.trim())) {
+            const termino = busquedaDebounced ? busquedaDebounced.toLowerCase().trim() : '';
+            
+            estudiantes.sort((a, b) => {
+              // PRIMERA PRIORIDAD: Filtro de riesgo
+              if (filtroRiesgo) {
+                const aCoincideRiesgo = a.estadoRiesgo === filtroRiesgo;
+                const bCoincideRiesgo = b.estadoRiesgo === filtroRiesgo;
+                
+                // Si uno coincide con el filtro de riesgo y el otro no, el que coincide va primero
+                if (aCoincideRiesgo && !bCoincideRiesgo) return -1;
+                if (bCoincideRiesgo && !aCoincideRiesgo) return 1;
+              }
+              
+              // SEGUNDA PRIORIDAD: Búsqueda por nombre/correo (solo si hay búsqueda activa)
+              if (termino) {
+                const nombreA = (a.nombreCompleto || '').toLowerCase();
+                const nombreB = (b.nombreCompleto || '').toLowerCase();
+                const correoA = (a.correo || '').toLowerCase();
+                const correoB = (b.correo || '').toLowerCase();
+                
+                // Máxima prioridad: nombre empieza con el término
+                const aPrimeraCoincidencia = nombreA.startsWith(termino);
+                const bPrimeraCoincidencia = nombreB.startsWith(termino);
+                
+                if (aPrimeraCoincidencia && !bPrimeraCoincidencia) return -1;
+                if (bPrimeraCoincidencia && !aPrimeraCoincidencia) return 1;
+                
+                // Segunda prioridad: nombre contiene el término
+                const aContieneNombre = nombreA.includes(termino);
+                const bContieneNombre = nombreB.includes(termino);
+                
+                if (aContieneNombre && !bContieneNombre) return -1;
+                if (bContieneNombre && !aContieneNombre) return 1;
+                
+                // Tercera prioridad: correo contiene el término
+                const aContieneCorreo = correoA.includes(termino);
+                const bContieneCorreo = correoB.includes(termino);
+                
+                if (aContieneCorreo && !bContieneCorreo) return -1;
+                if (bContieneCorreo && !aContieneCorreo) return 1;
+              }
+              
+              // ORDEN FINAL: Alfabético por nombre
+              const nombreA = (a.nombreCompleto || '').toLowerCase();
+              const nombreB = (b.nombreCompleto || '').toLowerCase();
+              return nombreA.localeCompare(nombreB);
+            });
+          }
+          
+          setStudentsData({
+            ...response.data,
+            estudiantes
+          });
+        } else {
+          setError(response.message || 'Error al cargar la lista de estudiantes');
+        }
+      } catch (error: any) {
+        setError(error.message || 'Error de conexión');
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchAndUpdate();
+  }, [filtroRiesgo, filtroCarrera, busquedaDebounced, paginaActual, setSearchParams]);
+
+  // Handlers para los filtros
+  const handleFiltroRiesgoChange = (value: string) => {
+    setFiltroRiesgo(value);
+    setPaginaActual(1); // Reset página al cambiar filtro
   };
 
-  const filtros = { filtroRiesgo, filtroCarrera, busqueda, ordenarPor, orden };
+  const handleFiltroCarreraChange = (value: string) => {
+    setFiltroCarrera(value);
+    setPaginaActual(1); // Reset página al cambiar filtro
+  };
+
+  const handleBusquedaChange = (value: string) => {
+    setBusqueda(value);
+    setPaginaActual(1); // Reset página al cambiar búsqueda
+  };
 
   const getRiskColor = (nivel: string) => {
     return COLORES_RIESGO[nivel as keyof typeof COLORES_RIESGO] || COLORES_RIESGO.BAJO;
@@ -106,8 +257,7 @@ function StudentsList() {
     setFiltroRiesgo('');
     setFiltroCarrera('');
     setBusqueda('');
-    setOrdenarPor('nombreCompleto');
-    setOrden('asc');
+    setBusquedaDebounced(''); // También limpiar el debounced
     setPaginaActual(1);
   };
 
@@ -116,7 +266,7 @@ function StudentsList() {
       const response = await apiService.getStudentsList({
         filtroRiesgo: filtroRiesgo || undefined,
         filtroCarrera: filtroCarrera || undefined,
-        busqueda: busqueda || undefined,
+        busqueda: busquedaDebounced || undefined,
         formato: 'json'
       });
       
@@ -160,7 +310,7 @@ function StudentsList() {
             <h2 className="text-2xl font-bold bg-gradient-to-r from-gray-800 to-gray-600 bg-clip-text text-transparent mb-2">Error al cargar</h2>
             <p className="text-gray-600 mb-6">{error}</p>
             <button 
-              onClick={fetchStudents}
+              onClick={refrescarDatos}
               className="px-6 py-3 bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-600 hover:to-blue-700 text-white font-semibold rounded-xl shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 transition-all duration-200"
             >
               Reintentar
@@ -189,14 +339,14 @@ function StudentsList() {
           {/* Header */}
           <div className="mb-8 text-center">
             <h1 className="text-4xl font-bold bg-gradient-to-r from-gray-800 to-gray-600 bg-clip-text text-transparent mb-4">
-              Gestión de Estudiantes 👥
+              Gestión de Estudiantes
             </h1>
             <p className="text-lg text-gray-600 font-medium">
               Monitor y gestiona el bienestar de todos los estudiantes registrados
             </p>
           </div>
 
-          {/* Filtros y controles */}
+          {/* Filtros y controles - CORREGIDOS */}
           <div className="bg-white/70 backdrop-blur-lg border border-white/20 rounded-2xl shadow-xl p-6 mb-6">
             <div className="grid grid-cols-1 lg:grid-cols-4 gap-4 mb-4">
               {/* Búsqueda */}
@@ -209,8 +359,8 @@ function StudentsList() {
                     type="text"
                     id="busqueda"
                     value={busqueda}
-                    onChange={(e) => handleFiltroChange({ busqueda: e.target.value })}
-                    className="w-full pl-10 pr-4 py-3 border-2 border-gray-200 rounded-xl bg-white/50 backdrop-blur-sm shadow-sm transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-transparent hover:bg-white/70"
+                    onChange={(e) => handleBusquedaChange(e.target.value)}
+                    className="w-full pl-10 pr-4 py-3 border-2 border-gray-200 rounded-xl bg-white shadow-sm transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-transparent hover:bg-gray-50"
                     placeholder="Nombre o correo del estudiante..."
                   />
                   <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
@@ -218,6 +368,12 @@ function StudentsList() {
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
                     </svg>
                   </div>
+                  {/* Indicador de búsqueda activa */}
+                  {busqueda !== busquedaDebounced && (
+                    <div className="absolute inset-y-0 right-0 pr-3 flex items-center">
+                      <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-cyan-500"></div>
+                    </div>
+                  )}
                 </div>
               </div>
 
@@ -229,8 +385,8 @@ function StudentsList() {
                 <select
                   id="filtroRiesgo"
                   value={filtroRiesgo}
-                  onChange={(e) => handleFiltroChange({ filtroRiesgo: e.target.value })}
-                  className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl bg-white/50 backdrop-blur-sm shadow-sm transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-transparent hover:bg-white/70"
+                  onChange={(e) => handleFiltroRiesgoChange(e.target.value)}
+                  className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl bg-white shadow-sm transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-transparent hover:bg-gray-50"
                 >
                   <option value="">Todos los niveles</option>
                   <option value="ALTO">Alto</option>
@@ -248,8 +404,8 @@ function StudentsList() {
                   type="text"
                   id="filtroCarrera"
                   value={filtroCarrera}
-                  onChange={(e) => handleFiltroChange({ filtroCarrera: e.target.value })}
-                  className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl bg-white/50 backdrop-blur-sm shadow-sm transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-transparent hover:bg-white/70"
+                  onChange={(e) => handleFiltroCarreraChange(e.target.value)}
+                  className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl bg-white shadow-sm transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-transparent hover:bg-gray-50"
                   placeholder="Filtrar por carrera..."
                 />
               </div>
@@ -258,29 +414,6 @@ function StudentsList() {
             {/* Controles adicionales */}
             <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between space-y-2 sm:space-y-0 pt-4 border-t border-white/30">
               <div className="flex items-center space-x-4">
-                <div className="flex items-center space-x-2">
-                  <label htmlFor="ordenarPor" className="text-sm font-semibold text-gray-700">
-                    Ordenar por:
-                  </label>
-                  <select
-                    id="ordenarPor"
-                    value={ordenarPor}
-                    onChange={(e) => handleFiltroChange({ ordenarPor: e.target.value })}
-                    className="px-3 py-2 text-sm border-2 border-gray-200 rounded-lg bg-white/50 backdrop-blur-sm shadow-sm transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-transparent hover:bg-white/70"
-                  >
-                    <option value="nombreCompleto">Nombre</option>
-                    <option value="carrera">Carrera</option>
-                    <option value="estadoRiesgo">Nivel de riesgo</option>
-                    <option value="fechaUltimaEvaluacion">Última evaluación</option>
-                  </select>
-                  <button
-                    onClick={() => handleFiltroChange({ orden: orden === 'asc' ? 'desc' : 'asc' })}
-                    className="text-gray-500 hover:text-gray-700 p-2 rounded-lg hover:bg-white/50 transition-all duration-200"
-                  >
-                    {orden === 'asc' ? '↑' : '↓'}
-                  </button>
-                </div>
-
                 <button
                   onClick={limpiarFiltros}
                   className="text-transparent bg-gradient-to-r from-blue-600 to-cyan-600 bg-clip-text hover:from-blue-700 hover:to-cyan-700 text-sm font-semibold transition-all duration-200"
@@ -292,6 +425,7 @@ function StudentsList() {
               <div className="flex items-center space-x-4">
                 <span className="text-sm text-gray-600 font-medium">
                   {studentsData.paginacion.total} estudiante{studentsData.paginacion.total !== 1 ? 's' : ''}
+                  {(filtroRiesgo || filtroCarrera || busquedaDebounced) && ' encontrados'}
                 </span>
                 <button
                   onClick={exportarDatos}
@@ -301,6 +435,51 @@ function StudentsList() {
                 </button>
               </div>
             </div>
+
+            {/* Filtros activos */}
+            {(filtroRiesgo || filtroCarrera || busquedaDebounced) && (
+              <div className="mt-4 pt-4 border-t border-white/30">
+                <div className="flex flex-wrap items-center gap-2">
+                  <span className="text-sm font-semibold text-gray-700">Filtros activos:</span>
+                  
+                  {filtroRiesgo && (
+                    <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-gradient-to-r from-blue-100 to-cyan-100 text-blue-800 border border-blue-200">
+                      Riesgo: {filtroRiesgo}
+                      <button
+                        onClick={() => handleFiltroRiesgoChange('')}
+                        className="ml-2 text-blue-600 hover:text-blue-800"
+                      >
+                        ×
+                      </button>
+                    </span>
+                  )}
+                  
+                  {filtroCarrera && (
+                    <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-gradient-to-r from-green-100 to-teal-100 text-green-800 border border-green-200">
+                      Carrera: {filtroCarrera}
+                      <button
+                        onClick={() => handleFiltroCarreraChange('')}
+                        className="ml-2 text-green-600 hover:text-green-800"
+                      >
+                        ×
+                      </button>
+                    </span>
+                  )}
+                  
+                  {busquedaDebounced && (
+                    <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-gradient-to-r from-purple-100 to-pink-100 text-purple-800 border border-purple-200">
+                      Búsqueda: "{busquedaDebounced}"
+                      <button
+                        onClick={() => handleBusquedaChange('')}
+                        className="ml-2 text-purple-600 hover:text-purple-800"
+                      >
+                        ×
+                      </button>
+                    </span>
+                  )}
+                </div>
+              </div>
+            )}
           </div>
 
           {/* Lista de estudiantes */}
@@ -431,8 +610,19 @@ function StudentsList() {
                   No se encontraron estudiantes
                 </h3>
                 <p className="text-gray-600 font-medium">
-                  Intenta cambiar los filtros de búsqueda
+                  {(filtroRiesgo || filtroCarrera || busquedaDebounced) 
+                    ? 'Intenta cambiar los filtros de búsqueda'
+                    : 'No hay estudiantes registrados en el sistema'
+                  }
                 </p>
+                {(filtroRiesgo || filtroCarrera || busquedaDebounced) && (
+                  <button
+                    onClick={limpiarFiltros}
+                    className="mt-4 px-4 py-2 text-sm font-semibold text-white bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-600 hover:to-blue-700 rounded-xl shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 transition-all duration-200"
+                  >
+                    Limpiar filtros
+                  </button>
+                )}
               </div>
             </div>
           )}

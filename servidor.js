@@ -1295,6 +1295,73 @@ app.get('/api/coordinators/alerts', authenticateToken, async (req, res) => {
   }
 });
 
+// PUT /api/coordinators/alerts/mark-read
+app.put('/api/coordinators/alerts/mark-read', authenticateToken, async (req, res) => {
+  try {
+    if (req.user.tipoUsuario !== 'COORDINADOR') {
+      return res.status(403).json({
+        success: false,
+        message: 'Acceso restringido a coordinadores'
+      });
+    }
+
+    const { alertIds } = req.body;
+
+    if (!alertIds || !Array.isArray(alertIds) || alertIds.length === 0) {
+      return res.status(400).json({
+        success: false,
+        message: 'Se requiere un array de IDs de alertas'
+      });
+    }
+
+    console.log('🔄 Marcando alertas como leídas:', alertIds);
+
+    // Convertir IDs a enteros y validar
+    const validIds = alertIds.map(id => parseInt(id)).filter(id => !isNaN(id));
+    
+    if (validIds.length === 0) {
+      return res.status(400).json({
+        success: false,
+        message: 'IDs de alertas inválidos'
+      });
+    }
+
+    console.log('✅ IDs válidos:', validIds);
+
+    const resultado = await prisma.alerta.updateMany({
+      where: {
+        id: {
+          in: validIds
+        }
+      },
+      data: {
+        estaLeida: true,
+        fechaLeida: new Date()
+      }
+    });
+
+    console.log('📊 Resultado de actualización:', resultado);
+
+    res.status(200).json({
+      success: true,
+      message: `${resultado.count} alerta${resultado.count > 1 ? 's' : ''} marcada${resultado.count > 1 ? 's' : ''} como leída${resultado.count > 1 ? 's' : ''}`,
+      updatedCount: resultado.count
+    });
+
+  } catch (error) {
+    console.error('❌ Error completo marcando alertas:', {
+      message: error.message,
+      stack: error.stack,
+      name: error.name
+    });
+    
+    res.status(500).json({
+      success: false,
+      message: `Error interno del servidor: ${error.message}`
+    });
+  }
+});
+
 // POST /api/coordinators/reports/pdf - NUEVO ENDPOINT AGREGADO
 app.post('/api/coordinators/reports/pdf', authenticateToken, async (req, res) => {
   try {
